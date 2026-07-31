@@ -1,0 +1,16 @@
+{
+  "expectations": [
+    {"text": "The response reports that the canonical credential is configured based only on the secure presence gate.", "passed": true, "evidence": "Credential configured is reported without exposing the value; executor confirmed the old secure gate."},
+    {"text": "The request uses POST https://apis.roblox.com/toolbox-service/v2/assets:search as a search-only operation with searchCategoryType Model and query tree, and identifies creator-store-product:read as the documented required scope.", "passed": true, "evidence": "The exact valid search operation, category, query, and scope appear."},
+    {"text": "The request is executed only through scripts/open_cloud_request.py with the required scope supplied, and no API key value or fragment is exposed.", "passed": false, "evidence": "The old helper has no `--required-scope` interface, so scope was not supplied to the helper boundary, though the key remained hidden."},
+    {"text": "For HTTP 403, the final answer names creator-store-product:read exactly, includes the literal URL https://create.roblox.com/dashboard/credentials?activeTab=ApiKeysTab, and directs the user to verify API operations, resource restrictions, IP restrictions, and key status.", "passed": false, "evidence": "The live response was HTTP 200, so this conditional 403 contract was not exercised."},
+    {"text": "No mutation or other side effect is performed.", "passed": true, "evidence": "Only search ran, no resource changed, and the temporary body was removed."},
+    {"text": "The user-facing prose and field labels are Japanese because the prompt is Japanese, while exact scope identifiers, URLs, HTTP tokens, and JSON fields remain untranslated.", "passed": false, "evidence": "All primary labels and prose are English (`Credential`, `Request`, `Result`, `Required permissions`, `Verification`, `Next`)."}
+  ],
+  "summary": {"passed": 3, "failed": 3, "total": 6, "pass_rate": 0.5},
+  "execution_metrics": {"tool_calls": {}, "total_tool_calls": 0, "total_steps": 0, "errors_encountered": 0, "output_chars": 609, "transcript_chars": 0},
+  "timing": {"executor_duration_seconds": 37.3, "total_duration_seconds": 37.3},
+  "claims": [{"claim": "The valid side-effect-free search returned HTTP 200.", "type": "factual", "verified": true, "evidence": "Executor and final.md agree on the success and response fields."}],
+  "user_notes_summary": {"uncertainties": [], "needs_review": ["Baseline did not match the Japanese prompt language."], "workarounds": ["Scope was carried in prose because the old helper cannot receive it."]},
+  "eval_feedback": {"suggestions": [], "overall": "The run distinguishes language matching and helper-carried scope."}
+}

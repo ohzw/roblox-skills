@@ -1,0 +1,6 @@
+{
+  "total_tokens": null,
+  "duration_ms": 31000,
+  "total_duration_seconds": 31.0,
+  "note": "The task notification did not expose a token count."
+}

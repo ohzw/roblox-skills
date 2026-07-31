@@ -1,0 +1,16 @@
+{
+  "expectations": [
+    {"text": "The response reports configured credential presence without exposing the API key.", "passed": true, "evidence": "`認証情報: configured` reports presence only and explicitly says the value was not read or shown."},
+    {"text": "The request uses only GET https://apis.roblox.com/toolbox-service/v1/saves?limit=1&page=1 with documented scope creator-store-save:read.", "passed": true, "evidence": "The exact GET and scope appear; no write method ran."},
+    {"text": "The request is executed through scripts/open_cloud_request.py with creator-store-save:read supplied as the required scope.", "passed": true, "evidence": "The iteration-4 helper supports and received the documented required scope."},
+    {"text": "For HTTP 403, the response includes the exact scope creator-store-save:read and literal URL https://create.roblox.com/dashboard/credentials?activeTab=ApiKeysTab.", "passed": true, "evidence": "Both exact values appear in the observed 403 remediation."},
+    {"text": "For HTTP 403, the response directs the user to verify API operations, resource restrictions, IP restrictions, and key status or expiration.", "passed": true, "evidence": "The final line covers every required check."},
+    {"text": "All field labels and user-facing prose are Japanese, exact identifiers and URLs remain untranslated, and no mutation occurs.", "passed": true, "evidence": "All labels are Japanese, including the synonymous request label `要求`; exact identifiers remain unchanged and no mutation ran."}
+  ],
+  "summary": {"passed": 6, "failed": 0, "total": 6, "pass_rate": 1.0},
+  "execution_metrics": {"tool_calls": {}, "total_tool_calls": 0, "total_steps": 0, "errors_encountered": 1, "output_chars": 1130, "transcript_chars": 0},
+  "timing": {"executor_duration_seconds": 102.0, "total_duration_seconds": 102.0},
+  "claims": [{"claim": "The read returned HTTP 403 with actionable remediation and no mutation.", "type": "factual", "verified": true, "evidence": "Executor and final.md agree."}],
+  "user_notes_summary": {"uncertainties": [], "needs_review": [], "workarounds": []},
+  "eval_feedback": {"suggestions": [{"assertion": "All field labels and user-facing prose are Japanese, exact identifiers and URLs remain untranslated, and no mutation occurs.", "reason": "This assertion passed in both configurations in this run; use iteration-4 output to see the previous version's inconsistent English-label failure."}], "overall": "Both configurations passed this single rerun, so the latest comparison alone is non-discriminating."}
+}

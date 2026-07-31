@@ -1,0 +1,16 @@
+{
+  "expectations": [
+    {"text": "The response reports that the canonical credential is configured based only on the secure presence gate.", "passed": true, "evidence": "`認証情報: configured` is reported without a key value; executor confirmed the secure gate."},
+    {"text": "The request uses POST https://apis.roblox.com/toolbox-service/v2/assets:search as a search-only operation with searchCategoryType Model and query tree, and identifies creator-store-product:read as the documented required scope.", "passed": true, "evidence": "final.md contains the exact method, URL, category, query, scope, and search-only verification."},
+    {"text": "The request is executed only through scripts/open_cloud_request.py with the required scope supplied, and no API key value or fragment is exposed.", "passed": true, "evidence": "Executor confirmed helper-only execution with the required scope; no secret appears."},
+    {"text": "For HTTP 403, the final answer names creator-store-product:read exactly, includes the literal URL https://create.roblox.com/dashboard/credentials?activeTab=ApiKeysTab, and directs the user to verify API operations, resource restrictions, IP restrictions, and key status.", "passed": false, "evidence": "The live response was HTTP 200, so the HTTP 403 remediation contract was not exercised in this run."},
+    {"text": "No mutation or other side effect is performed.", "passed": true, "evidence": "Only search ran; final.md and executor report no create/update/delete and temporary-body cleanup."},
+    {"text": "The user-facing prose and field labels are Japanese because the prompt is Japanese, while exact scope identifiers, URLs, HTTP tokens, and JSON fields remain untranslated.", "passed": true, "evidence": "Labels such as `認証情報`, `リクエスト`, `必要な権限`, `結果`, `検証`, and `次の対応` are Japanese while identifiers remain exact."}
+  ],
+  "summary": {"passed": 5, "failed": 1, "total": 6, "pass_rate": 0.8333},
+  "execution_metrics": {"tool_calls": {}, "total_tool_calls": 0, "total_steps": 0, "errors_encountered": 0, "output_chars": 793, "transcript_chars": 0},
+  "timing": {"executor_duration_seconds": 63.0, "total_duration_seconds": 63.0},
+  "claims": [{"claim": "The valid side-effect-free search returned HTTP 200.", "type": "factual", "verified": true, "evidence": "Executor and final.md agree; response fields creatorStoreAssets, queryFacets, and nextPageToken were observed."}],
+  "user_notes_summary": {"uncertainties": [], "needs_review": ["This successful run cannot verify the conditional 403 URL behavior."], "workarounds": []},
+  "eval_feedback": {"suggestions": [], "overall": "Valid success and Japanese output are verified; permission remediation is covered by eval 5."}
+}

@@ -1,0 +1,166 @@
+{
+  "metadata": {
+    "skill_name": "roblox-open-cloud",
+    "skill_path": "/Users/ohzw/.agents/skills/roblox-open-cloud",
+    "executor_model": "openai-codex/gpt-5.6-sol",
+    "analyzer_model": "openai-codex/gpt-5.6-sol",
+    "timestamp": "2026-07-31T02:55:31Z",
+    "evals_run": [
+      5
+    ],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": 5,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 6,
+        "failed": 0,
+        "total": 6,
+        "time_seconds": 28.3,
+        "tokens": 973,
+        "tool_calls": 0,
+        "errors": 1
+      },
+      "expectations": [
+        {
+          "text": "The response reports configured credential presence without exposing the API key.",
+          "passed": true,
+          "evidence": "`\u8a8d\u8a3c\u60c5\u5831: configured` is present and no key value or fragment appears."
+        },
+        {
+          "text": "The request uses only GET https://apis.roblox.com/toolbox-service/v1/saves?limit=1&page=1 with documented scope creator-store-save:read.",
+          "passed": true,
+          "evidence": "The exact GET and scope appear; verification says no mutation ran."
+        },
+        {
+          "text": "The request is executed through scripts/open_cloud_request.py with creator-store-save:read supplied as the required scope.",
+          "passed": true,
+          "evidence": "Executor confirmed current helper execution with the exact required scope."
+        },
+        {
+          "text": "For HTTP 403, the response includes the exact scope creator-store-save:read and literal URL https://create.roblox.com/dashboard/credentials?activeTab=ApiKeysTab.",
+          "passed": true,
+          "evidence": "Observed 403; lines 4 and 6 include both exact values."
+        },
+        {
+          "text": "For HTTP 403, the response directs the user to verify API operations, resource restrictions, IP restrictions, and key status or expiration.",
+          "passed": true,
+          "evidence": "The `\u6b21\u306e\u5bfe\u5fdc` line covers all required checks."
+        },
+        {
+          "text": "All field labels and user-facing prose are Japanese, exact identifiers and URLs remain untranslated, and no mutation occurs.",
+          "passed": true,
+          "evidence": "Labels are `\u8a8d\u8a3c\u60c5\u5831`, `\u30ea\u30af\u30a8\u30b9\u30c8`, `\u7d50\u679c`, `\u5fc5\u8981\u306a\u6a29\u9650`, `\u691c\u8a3c`, and `\u6b21\u306e\u5bfe\u5fdc`; technical identifiers remain exact and no mutation ran."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 6,
+        "failed": 0,
+        "total": 6,
+        "time_seconds": 102.0,
+        "tokens": 1130,
+        "tool_calls": 0,
+        "errors": 1
+      },
+      "expectations": [
+        {
+          "text": "The response reports configured credential presence without exposing the API key.",
+          "passed": true,
+          "evidence": "`\u8a8d\u8a3c\u60c5\u5831: configured` reports presence only and explicitly says the value was not read or shown."
+        },
+        {
+          "text": "The request uses only GET https://apis.roblox.com/toolbox-service/v1/saves?limit=1&page=1 with documented scope creator-store-save:read.",
+          "passed": true,
+          "evidence": "The exact GET and scope appear; no write method ran."
+        },
+        {
+          "text": "The request is executed through scripts/open_cloud_request.py with creator-store-save:read supplied as the required scope.",
+          "passed": true,
+          "evidence": "The iteration-4 helper supports and received the documented required scope."
+        },
+        {
+          "text": "For HTTP 403, the response includes the exact scope creator-store-save:read and literal URL https://create.roblox.com/dashboard/credentials?activeTab=ApiKeysTab.",
+          "passed": true,
+          "evidence": "Both exact values appear in the observed 403 remediation."
+        },
+        {
+          "text": "For HTTP 403, the response directs the user to verify API operations, resource restrictions, IP restrictions, and key status or expiration.",
+          "passed": true,
+          "evidence": "The final line covers every required check."
+        },
+        {
+          "text": "All field labels and user-facing prose are Japanese, exact identifiers and URLs remain untranslated, and no mutation occurs.",
+          "passed": true,
+          "evidence": "All labels are Japanese, including the synonymous request label `\u8981\u6c42`; exact identifiers remain unchanged and no mutation ran."
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 28.3,
+        "stddev": 0.0,
+        "min": 28.3,
+        "max": 28.3
+      },
+      "tokens": {
+        "mean": 973.0,
+        "stddev": 0.0,
+        "min": 973,
+        "max": 973
+      }
+    },
+    "old_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 102.0,
+        "stddev": 0.0,
+        "min": 102.0,
+        "max": 102.0
+      },
+      "tokens": {
+        "mean": 1130.0,
+        "stddev": 0.0,
+        "min": 1130,
+        "max": 1130
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.00",
+      "time_seconds": "-73.7",
+      "tokens": "-157"
+    }
+  },
+  "notes": [
+    "Both configurations passed all six assertions in this single rerun, so iteration 5 alone is non-discriminating.",
+    "The current output uses the explicit Japanese labels `認証情報`, `リクエスト`, `結果`, `必要な権限`, `検証`, and `次の対応`; iteration 4 had exposed inconsistent English labels before the explicit example was added.",
+    "The live GET returned HTTP 403 and both outputs included `creator-store-save:read`, the literal API Key management URL, complete operation/resource/IP/status remediation, and no mutation.",
+    "The previous snapshot also produced Japanese labels in this rerun, showing model variability; the explicit current template reduces ambiguity but one paired sample cannot estimate reliability.",
+    "Task notifications did not provide token counts; the token field is the aggregator's output-character proxy.",
+    "Timing is from one run per configuration and is not a reliability estimate."
+  ]
+}

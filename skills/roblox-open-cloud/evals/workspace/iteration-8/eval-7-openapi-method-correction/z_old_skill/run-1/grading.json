@@ -1,0 +1,14 @@
+{
+  "expectations": [
+    {"text":"The configured credential gate is checked without exposing the API key.","passed":false,"evidence":"Trace never ran the credential gate."},
+    {"text":"The response or execution trace shows that the live official OpenAPI document was consulted through the assigned skill's documented workflow.","passed":false,"evidence":"Trace used legacy reference pages and web search, not a live OpenAPI workflow."},
+    {"text":"The response rejects POST as undocumented for /cloud/v2/universes/{universe_id}/data-stores and identifies GET as the correct list method.","passed":true,"evidence":"Final explicitly rejects POST and identifies GET."},
+    {"text":"The response identifies scope universe-datastores.control:list, STABLE stability, and https://create.roblox.com/docs/cloud/reference/features/storage#Cloud_ListDataStores.","passed":false,"evidence":"The scope is right, but stability and the exact operation reference are omitted."},
+    {"text":"No request is sent to apis.roblox.com, no mutation occurs, and no API-key value or fragment is exposed.","passed":true,"evidence":"Trace shows research and write only; final says no request."},
+    {"text":"The explanation and labels are Japanese while exact methods, scopes, paths, and URLs remain untranslated.","passed":true,"evidence":"The concise Japanese explanation preserves exact identifiers."}
+  ],
+  "summary":{"passed":3,"failed":3,"total":6,"pass_rate":0.5},
+  "execution_metrics":{"output_chars":625},
+  "timing":{"executor_duration_seconds":46.8,"total_duration_seconds":46.8},
+  "eval_feedback":{"suggestions":["Use the live OpenAPI operation and include stability and externalDocs."],"overall":"Correct method and scope, but incomplete provenance and contract metadata."}
+}

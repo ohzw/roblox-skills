@@ -1,0 +1,18 @@
+{
+  "expectations": [
+    {"text": "The response reports configured credential presence without exposing the API key.", "passed": true, "evidence": "`認証情報: configured` appears and no key value or fragment is present."},
+    {"text": "The request uses only GET https://apis.roblox.com/toolbox-service/v1/saves?limit=1&page=1 with documented scope creator-store-save:read.", "passed": true, "evidence": "The exact GET URL and scope appear; no other operation is reported."},
+    {"text": "The request is executed through scripts/open_cloud_request.py with creator-store-save:read supplied as the required scope.", "passed": true, "evidence": "Executor used the current helper and the helper returned the required scope in its 403 guidance."},
+    {"text": "For HTTP 403, the response includes the exact scope creator-store-save:read and literal URL https://create.roblox.com/dashboard/credentials?activeTab=ApiKeysTab.", "passed": true, "evidence": "Both exact values appear in lines 4 and 6."},
+    {"text": "For HTTP 403, the response directs the user to verify API operations, resource restrictions, IP restrictions, and key status or expiration.", "passed": true, "evidence": "Line 6 covers every required authorization check."},
+    {"text": "For HTTP 403, the response distinguishes authorization from credential absence and says the existing configured key's permissions or restrictions must be edited.", "passed": true, "evidence": "Line 3 says the key exists but authorization failed; line 6 says to edit the existing key."},
+    {"text": "For HTTP 403, the response does not tell the user to create a key, set or re-enter ROBLOX_OPEN_CLOUD_API_KEY, or restart/relaunch the agent.", "passed": true, "evidence": "No missing-key setup or restart instruction appears."},
+    {"text": "The user-facing response and labels are Japanese while exact identifiers and URLs remain untranslated, and no mutation occurs.", "passed": true, "evidence": "All labels/prose are Japanese, identifiers are exact, and line 5 says no mutation ran."}
+  ],
+  "summary": {"passed": 8, "failed": 0, "total": 8, "pass_rate": 1.0},
+  "execution_metrics": {"tool_calls": {}, "total_tool_calls": 0, "total_steps": 0, "errors_encountered": 1, "output_chars": 750, "transcript_chars": 0},
+  "timing": {"executor_duration_seconds": 23.3, "total_duration_seconds": 23.3},
+  "claims": [{"claim": "A configured key received HTTP 403 authorization failure; no mutation ran.", "type": "factual", "verified": true, "evidence": "Executor and final.md agree."}],
+  "user_notes_summary": {"uncertainties": [], "needs_review": [], "workarounds": []},
+  "eval_feedback": {"suggestions": [], "overall": "The current response cleanly separates authorization remediation from missing credential setup."}
+}

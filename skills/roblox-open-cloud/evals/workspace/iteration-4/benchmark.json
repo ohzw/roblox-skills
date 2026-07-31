@@ -1,0 +1,274 @@
+{
+  "metadata": {
+    "skill_name": "roblox-open-cloud",
+    "skill_path": "/Users/ohzw/.agents/skills/roblox-open-cloud",
+    "executor_model": "openai-codex/gpt-5.6-sol",
+    "analyzer_model": "openai-codex/gpt-5.6-sol",
+    "timestamp": "2026-07-31T02:49:18Z",
+    "evals_run": [
+      4,
+      5
+    ],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": 4,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8333,
+        "passed": 5,
+        "failed": 1,
+        "total": 6,
+        "time_seconds": 63.0,
+        "tokens": 793,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The response reports that the canonical credential is configured based only on the secure presence gate.",
+          "passed": true,
+          "evidence": "`\u8a8d\u8a3c\u60c5\u5831: configured` is reported without a key value; executor confirmed the secure gate."
+        },
+        {
+          "text": "The request uses POST https://apis.roblox.com/toolbox-service/v2/assets:search as a search-only operation with searchCategoryType Model and query tree, and identifies creator-store-product:read as the documented required scope.",
+          "passed": true,
+          "evidence": "final.md contains the exact method, URL, category, query, scope, and search-only verification."
+        },
+        {
+          "text": "The request is executed only through scripts/open_cloud_request.py with the required scope supplied, and no API key value or fragment is exposed.",
+          "passed": true,
+          "evidence": "Executor confirmed helper-only execution with the required scope; no secret appears."
+        },
+        {
+          "text": "For HTTP 403, the final answer names creator-store-product:read exactly, includes the literal URL https://create.roblox.com/dashboard/credentials?activeTab=ApiKeysTab, and directs the user to verify API operations, resource restrictions, IP restrictions, and key status.",
+          "passed": false,
+          "evidence": "The live response was HTTP 200, so the HTTP 403 remediation contract was not exercised in this run."
+        },
+        {
+          "text": "No mutation or other side effect is performed.",
+          "passed": true,
+          "evidence": "Only search ran; final.md and executor report no create/update/delete and temporary-body cleanup."
+        },
+        {
+          "text": "The user-facing prose and field labels are Japanese because the prompt is Japanese, while exact scope identifiers, URLs, HTTP tokens, and JSON fields remain untranslated.",
+          "passed": true,
+          "evidence": "Labels such as `\u8a8d\u8a3c\u60c5\u5831`, `\u30ea\u30af\u30a8\u30b9\u30c8`, `\u5fc5\u8981\u306a\u6a29\u9650`, `\u7d50\u679c`, `\u691c\u8a3c`, and `\u6b21\u306e\u5bfe\u5fdc` are Japanese while identifiers remain exact."
+        }
+      ],
+      "notes": [
+        "This successful run cannot verify the conditional 403 URL behavior."
+      ]
+    },
+    {
+      "eval_id": 5,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8333,
+        "passed": 5,
+        "failed": 1,
+        "total": 6,
+        "time_seconds": 29.1,
+        "tokens": 1114,
+        "tool_calls": 0,
+        "errors": 1
+      },
+      "expectations": [
+        {
+          "text": "The response reports configured credential presence without exposing the API key.",
+          "passed": true,
+          "evidence": "`Credential: configured` appears and no key value or fragment is present."
+        },
+        {
+          "text": "The request uses only GET https://apis.roblox.com/toolbox-service/v1/saves?limit=1&page=1 with documented scope creator-store-save:read.",
+          "passed": true,
+          "evidence": "The exact GET URL and exact required scope appear; verification says no write method ran."
+        },
+        {
+          "text": "The request is executed through scripts/open_cloud_request.py with creator-store-save:read supplied as the required scope.",
+          "passed": true,
+          "evidence": "Executor confirmed current helper execution with `--required-scope creator-store-save:read`."
+        },
+        {
+          "text": "For HTTP 403, the response includes the exact scope creator-store-save:read and literal URL https://create.roblox.com/dashboard/credentials?activeTab=ApiKeysTab.",
+          "passed": true,
+          "evidence": "Observed HTTP 403; lines 4 and 6 contain the exact scope and literal management URL."
+        },
+        {
+          "text": "For HTTP 403, the response directs the user to verify API operations, resource restrictions, IP restrictions, and key status or expiration.",
+          "passed": true,
+          "evidence": "Lines 7-10 explicitly list all four remediation checks."
+        },
+        {
+          "text": "The user-facing response is Japanese while exact identifiers and URLs remain untranslated, and no mutation occurs.",
+          "passed": false,
+          "evidence": "Most prose is Japanese, but all field labels remain English (`Credential`, `Request`, `Result`, `Required permissions`, `Verification`, `Next`), contrary to the label requirement."
+        }
+      ],
+      "notes": [
+        "Field labels did not follow the Japanese-language rule consistently."
+      ]
+    },
+    {
+      "eval_id": 4,
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.5,
+        "passed": 3,
+        "failed": 3,
+        "total": 6,
+        "time_seconds": 37.3,
+        "tokens": 609,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The response reports that the canonical credential is configured based only on the secure presence gate.",
+          "passed": true,
+          "evidence": "Credential configured is reported without exposing the value; executor confirmed the old secure gate."
+        },
+        {
+          "text": "The request uses POST https://apis.roblox.com/toolbox-service/v2/assets:search as a search-only operation with searchCategoryType Model and query tree, and identifies creator-store-product:read as the documented required scope.",
+          "passed": true,
+          "evidence": "The exact valid search operation, category, query, and scope appear."
+        },
+        {
+          "text": "The request is executed only through scripts/open_cloud_request.py with the required scope supplied, and no API key value or fragment is exposed.",
+          "passed": false,
+          "evidence": "The old helper has no `--required-scope` interface, so scope was not supplied to the helper boundary, though the key remained hidden."
+        },
+        {
+          "text": "For HTTP 403, the final answer names creator-store-product:read exactly, includes the literal URL https://create.roblox.com/dashboard/credentials?activeTab=ApiKeysTab, and directs the user to verify API operations, resource restrictions, IP restrictions, and key status.",
+          "passed": false,
+          "evidence": "The live response was HTTP 200, so this conditional 403 contract was not exercised."
+        },
+        {
+          "text": "No mutation or other side effect is performed.",
+          "passed": true,
+          "evidence": "Only search ran, no resource changed, and the temporary body was removed."
+        },
+        {
+          "text": "The user-facing prose and field labels are Japanese because the prompt is Japanese, while exact scope identifiers, URLs, HTTP tokens, and JSON fields remain untranslated.",
+          "passed": false,
+          "evidence": "All primary labels and prose are English (`Credential`, `Request`, `Result`, `Required permissions`, `Verification`, `Next`)."
+        }
+      ],
+      "notes": [
+        "Baseline did not match the Japanese prompt language.",
+        "Scope was carried in prose because the old helper cannot receive it."
+      ]
+    },
+    {
+      "eval_id": 5,
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.6667,
+        "passed": 4,
+        "failed": 2,
+        "total": 6,
+        "time_seconds": 82.0,
+        "tokens": 953,
+        "tool_calls": 0,
+        "errors": 1
+      },
+      "expectations": [
+        {
+          "text": "The response reports configured credential presence without exposing the API key.",
+          "passed": true,
+          "evidence": "Configured presence is reported and no secret appears."
+        },
+        {
+          "text": "The request uses only GET https://apis.roblox.com/toolbox-service/v1/saves?limit=1&page=1 with documented scope creator-store-save:read.",
+          "passed": true,
+          "evidence": "The exact GET URL and scope appear; final.md says no write operation ran."
+        },
+        {
+          "text": "The request is executed through scripts/open_cloud_request.py with creator-store-save:read supplied as the required scope.",
+          "passed": false,
+          "evidence": "The old helper has no required-scope argument, so scope was not supplied to the helper boundary."
+        },
+        {
+          "text": "For HTTP 403, the response includes the exact scope creator-store-save:read and literal URL https://create.roblox.com/dashboard/credentials?activeTab=ApiKeysTab.",
+          "passed": true,
+          "evidence": "The observed 403 response includes both exact values in the remediation line."
+        },
+        {
+          "text": "For HTTP 403, the response directs the user to verify API operations, resource restrictions, IP restrictions, and key status or expiration.",
+          "passed": true,
+          "evidence": "The Next line covers API system/operation, resource restriction, allowed IP, status, and expiration."
+        },
+        {
+          "text": "The user-facing response is Japanese while exact identifiers and URLs remain untranslated, and no mutation occurs.",
+          "passed": false,
+          "evidence": "Prose is largely Japanese, but the field labels remain English; no mutation did occur."
+        }
+      ],
+      "notes": [
+        "Baseline field labels did not match Japanese.",
+        "Scope was carried in prose because the old helper cannot receive it."
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 0.8333,
+        "stddev": 0.0,
+        "min": 0.8333,
+        "max": 0.8333
+      },
+      "time_seconds": {
+        "mean": 46.05,
+        "stddev": 23.9709,
+        "min": 29.1,
+        "max": 63.0
+      },
+      "tokens": {
+        "mean": 953.5,
+        "stddev": 226.9813,
+        "min": 793,
+        "max": 1114
+      }
+    },
+    "old_skill": {
+      "pass_rate": {
+        "mean": 0.5834,
+        "stddev": 0.1179,
+        "min": 0.5,
+        "max": 0.6667
+      },
+      "time_seconds": {
+        "mean": 59.65,
+        "stddev": 31.6077,
+        "min": 37.3,
+        "max": 82.0
+      },
+      "tokens": {
+        "mean": 781.0,
+        "stddev": 243.2447,
+        "min": 609,
+        "max": 953
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.25",
+      "time_seconds": "-13.6",
+      "tokens": "+172"
+    }
+  },
+  "notes": [
+    "The valid Model/tree search returned HTTP 200 in both configurations and confirmed the corrected request schema is side-effect-free.",
+    "The saves read returned HTTP 403 in both configurations. The current skill included the exact `creator-store-save:read` scope, literal API Key management URL, and operation/resource/IP/status checks.",
+    "The old snapshot also improvised the management URL and full remediation in this sample, so URL presence alone was not discriminating; helper-carried scope remained discriminating.",
+    "The current skill matched Japanese labels on eval 4 but reverted to English field labels on eval 5. This inconsistent language behavior is a real failure and requires another revision.",
+    "Current skill averaged 83.3% versus 58.3% for the old snapshot, a +0.25 pass-rate delta across two evals.",
+    "Task notifications did not provide token counts; the token field is the aggregator's output-character proxy.",
+    "Each eval has one run per configuration. Timing variance is not a reliability estimate."
+  ]
+}

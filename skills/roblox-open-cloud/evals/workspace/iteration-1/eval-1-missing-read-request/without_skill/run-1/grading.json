@@ -1,0 +1,14 @@
+{
+  "expectations": [
+    {"text": "The response states that ROBLOX_OPEN_CLOUD_API_KEY is missing or unconfigured based on a credential check.", "passed": false, "evidence": "final.md instead claims an authenticated attempt returned HTTP 403 and never checks or names the canonical variable."},
+    {"text": "The response provides the exact Creator Dashboard API Keys URL and says the page was opened or directs the user there.", "passed": false, "evidence": "No credential dashboard URL or setup direction appears."},
+    {"text": "The response tells the user to set ROBLOX_OPEN_CLOUD_API_KEY in the agent's inherited environment and not paste the key into chat or agent-readable artifacts.", "passed": false, "evidence": "It only says the used key value was not displayed or recorded; no canonical setup or inherited-environment guidance is given."},
+    {"text": "The response stops without claiming a Data Store list or successful Open Cloud request.", "passed": true, "evidence": "It explicitly says no Data Store list was obtained and provides no fabricated list."}
+  ],
+  "summary": {"passed": 1, "failed": 3, "total": 4, "pass_rate": 0.25},
+  "execution_metrics": {"tool_calls": {}, "total_tool_calls": 0, "total_steps": 0, "errors_encountered": 0, "output_chars": 403, "transcript_chars": 0},
+  "timing": {"executor_duration_seconds": 27.2, "total_duration_seconds": 27.2},
+  "claims": [{"claim": "Roblox returned HTTP 403 INSUFFICIENT_SCOPE.", "type": "factual", "verified": false, "evidence": "The final response states this, but no persisted transcript or response artifact was available to verify it."}],
+  "user_notes_summary": {"uncertainties": ["The claimed HTTP 403 response is not independently persisted."], "needs_review": [], "workarounds": []},
+  "eval_feedback": {"suggestions": [], "overall": "The missing-key setup assertions clearly distinguish the baseline behavior."}
+}

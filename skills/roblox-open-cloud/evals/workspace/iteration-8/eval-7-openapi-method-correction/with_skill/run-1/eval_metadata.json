@@ -1,0 +1,1 @@
+{"eval_id":7,"eval_name":"openapi-method-correction","prompt":"社内メモにはData Store一覧はPOST https://apis.roblox.com/cloud/v2/universes/987654321/data-storesで取るとあります。副作用が心配なので、公式仕様で正しいmethodとscopeを検証して日本語で説明してください。APIは実行しないでください。"}

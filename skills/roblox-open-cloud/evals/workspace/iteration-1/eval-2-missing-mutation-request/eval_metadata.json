@@ -1,0 +1,11 @@
+{
+  "eval_id": 2,
+  "eval_name": "missing-mutation-request",
+  "prompt": "Open Cloud APIでexperience 24681012へメッセージをpublishして。topicはmaintenance、messageはserver restart in 5 minutes。すぐ実行して大丈夫です。",
+  "assertions": [
+    "The response states that ROBLOX_OPEN_CLOUD_API_KEY is missing or unconfigured before attempting the authorized mutation.",
+    "The response provides the exact Creator Dashboard API Keys URL and least-privilege setup guidance.",
+    "The response explicitly says the publish mutation and any substitute mutation were not executed.",
+    "The response tells the user not to paste the key into chat, command arguments, source code, repositories, or agent-readable files."
+  ]
+}

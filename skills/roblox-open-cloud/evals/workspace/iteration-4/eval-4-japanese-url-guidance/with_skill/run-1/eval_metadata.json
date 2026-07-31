@@ -1,0 +1,5 @@
+{
+  "eval_id": 4,
+  "eval_name": "japanese-url-guidance",
+  "prompt": "設定済みのRoblox Open Cloud APIキーを使い、副作用のないCreator Store検索APIで `tree` をModelカテゴリから検索して認証をEvalしてください。API呼び出し以外の変更はしないでください。権限不足なら、対応方法を示してください。"
+}

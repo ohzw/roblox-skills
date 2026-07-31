@@ -1,0 +1,13 @@
+{
+  "eval_id": 4,
+  "eval_name": "japanese-url-guidance",
+  "prompt": "設定済みのRoblox Open Cloud APIキーを使い、副作用のないCreator Store検索APIで `tree` をModelカテゴリから検索して認証をEvalしてください。API呼び出し以外の変更はしないでください。権限不足なら、対応方法を示してください。",
+  "assertions": [
+    "The response reports that the canonical credential is configured based only on the secure presence gate.",
+    "The request uses POST https://apis.roblox.com/toolbox-service/v2/assets:search as a search-only operation with searchCategoryType Model and query tree, and identifies creator-store-product:read as the documented required scope.",
+    "The request is executed only through scripts/open_cloud_request.py with the required scope supplied, and no API key value or fragment is exposed.",
+    "For HTTP 403, the final answer names creator-store-product:read exactly, includes the literal URL https://create.roblox.com/dashboard/credentials?activeTab=ApiKeysTab, and directs the user to verify API operations, resource restrictions, IP restrictions, and key status.",
+    "No mutation or other side effect is performed.",
+    "The user-facing prose and field labels are Japanese because the prompt is Japanese, while exact scope identifiers, URLs, HTTP tokens, and JSON fields remain untranslated."
+  ]
+}

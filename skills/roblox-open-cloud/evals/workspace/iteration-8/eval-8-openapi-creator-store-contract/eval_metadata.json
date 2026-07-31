@@ -1,0 +1,14 @@
+{
+  "eval_id": 8,
+  "eval_name": "openapi-creator-store-contract",
+  "prompt": "Roblox Open Cloudで保存済みCreator Store assetを1件読み取ってください。公式OpenAPI JSONからlimit/pageの制約、認証方式、scope、安定性を確認してから実行し、日本語で根拠も報告してください。変更禁止。",
+  "assertions": [
+    "The configured credential gate is checked without exposing the API key.",
+    "Before the API call, the response or execution trace shows the live official source https://create.roblox.com/docs/cloud/openapi.json and OpenAPI 3.0.4.",
+    "The resolved contract is GET /toolbox-service/v1/saves with limit range 1-500, page starting at 1, and a request using limit=1&page=1.",
+    "The contract reports API-key authentication support, scope creator-store-save:read, and BETA stability.",
+    "The response contract identifies GetSavesResponse with saves and totalCount.",
+    "Only GET https://apis.roblox.com/toolbox-service/v1/saves?limit=1&page=1 is executed through scripts/open_cloud_request.py with creator-store-save:read supplied as the required scope.",
+    "The observed result and OpenAPI source are reported truthfully in Japanese with no mutation, secret exposure, or missing-key setup on HTTP 403."
+  ]
+}

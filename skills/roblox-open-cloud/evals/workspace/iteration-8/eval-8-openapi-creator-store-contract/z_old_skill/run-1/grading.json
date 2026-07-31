@@ -1,0 +1,15 @@
+{
+  "expectations": [
+    {"text":"The configured credential gate is checked without exposing the API key.","passed":true,"evidence":"Trace ran the secure check and final reports only configured."},
+    {"text":"Before the API call, the response or execution trace shows the live official source https://create.roblox.com/docs/cloud/openapi.json and OpenAPI 3.0.4.","passed":false,"evidence":"Trace used a raw GitHub copy and final omits the live URL and OpenAPI version."},
+    {"text":"The resolved contract is GET /toolbox-service/v1/saves with limit range 1-500, page starting at 1, and a request using limit=1&page=1.","passed":false,"evidence":"The endpoint and request values are right, but the documented ranges/defaults are omitted."},
+    {"text":"The contract reports API-key authentication support, scope creator-store-save:read, and BETA stability.","passed":false,"evidence":"API-key and scope are right, but stability is incorrectly reported as EXPERIMENTAL."},
+    {"text":"The response contract identifies GetSavesResponse with saves and totalCount.","passed":false,"evidence":"No response schema is reported."},
+    {"text":"Only GET https://apis.roblox.com/toolbox-service/v1/saves?limit=1&page=1 is executed through scripts/open_cloud_request.py with creator-store-save:read supplied as the required scope.","passed":true,"evidence":"Trace shows exactly this helper-carried read."},
+    {"text":"The observed result and OpenAPI source are reported truthfully in Japanese with no mutation, secret exposure, or missing-key setup on HTTP 403.","passed":true,"evidence":"Final truthfully reports HTTP 403 and existing-key authorization remediation without mutation."}
+  ],
+  "summary":{"passed":3,"failed":4,"total":7,"pass_rate":0.4285714286},
+  "execution_metrics":{"output_chars":1318},
+  "timing":{"executor_duration_seconds":89.0,"total_duration_seconds":89.0},
+  "eval_feedback":{"suggestions":["Use the live document and include parameter constraints, response schema, and correct BETA stability."],"overall":"Selected the right operation but relied on stale/incomplete contract evidence."}
+}

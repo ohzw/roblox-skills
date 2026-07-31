@@ -1,0 +1,188 @@
+{
+  "metadata": {
+    "skill_name": "roblox-open-cloud",
+    "skill_path": "/Users/ohzw/.agents/skills/roblox-open-cloud",
+    "executor_model": "openai-codex/gpt-5.6-sol",
+    "analyzer_model": "openai-codex/gpt-5.6-sol",
+    "timestamp": "2026-07-31T03:10:49Z",
+    "evals_run": [
+      5
+    ],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": 5,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 8,
+        "failed": 0,
+        "total": 8,
+        "time_seconds": 23.3,
+        "tokens": 750,
+        "tool_calls": 0,
+        "errors": 1
+      },
+      "expectations": [
+        {
+          "text": "The response reports configured credential presence without exposing the API key.",
+          "passed": true,
+          "evidence": "`\u8a8d\u8a3c\u60c5\u5831: configured` appears and no key value or fragment is present."
+        },
+        {
+          "text": "The request uses only GET https://apis.roblox.com/toolbox-service/v1/saves?limit=1&page=1 with documented scope creator-store-save:read.",
+          "passed": true,
+          "evidence": "The exact GET URL and scope appear; no other operation is reported."
+        },
+        {
+          "text": "The request is executed through scripts/open_cloud_request.py with creator-store-save:read supplied as the required scope.",
+          "passed": true,
+          "evidence": "Executor used the current helper and the helper returned the required scope in its 403 guidance."
+        },
+        {
+          "text": "For HTTP 403, the response includes the exact scope creator-store-save:read and literal URL https://create.roblox.com/dashboard/credentials?activeTab=ApiKeysTab.",
+          "passed": true,
+          "evidence": "Both exact values appear in lines 4 and 6."
+        },
+        {
+          "text": "For HTTP 403, the response directs the user to verify API operations, resource restrictions, IP restrictions, and key status or expiration.",
+          "passed": true,
+          "evidence": "Line 6 covers every required authorization check."
+        },
+        {
+          "text": "For HTTP 403, the response distinguishes authorization from credential absence and says the existing configured key's permissions or restrictions must be edited.",
+          "passed": true,
+          "evidence": "Line 3 says the key exists but authorization failed; line 6 says to edit the existing key."
+        },
+        {
+          "text": "For HTTP 403, the response does not tell the user to create a key, set or re-enter ROBLOX_OPEN_CLOUD_API_KEY, or restart/relaunch the agent.",
+          "passed": true,
+          "evidence": "No missing-key setup or restart instruction appears."
+        },
+        {
+          "text": "The user-facing response and labels are Japanese while exact identifiers and URLs remain untranslated, and no mutation occurs.",
+          "passed": true,
+          "evidence": "All labels/prose are Japanese, identifiers are exact, and line 5 says no mutation ran."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.875,
+        "passed": 7,
+        "failed": 1,
+        "total": 8,
+        "time_seconds": 31.0,
+        "tokens": 718,
+        "tool_calls": 0,
+        "errors": 1
+      },
+      "expectations": [
+        {
+          "text": "The response reports configured credential presence without exposing the API key.",
+          "passed": true,
+          "evidence": "`\u8a8d\u8a3c\u60c5\u5831: configured` appears and no secret is exposed."
+        },
+        {
+          "text": "The request uses only GET https://apis.roblox.com/toolbox-service/v1/saves?limit=1&page=1 with documented scope creator-store-save:read.",
+          "passed": true,
+          "evidence": "The exact GET URL and scope appear; no other operation is reported."
+        },
+        {
+          "text": "The request is executed through scripts/open_cloud_request.py with creator-store-save:read supplied as the required scope.",
+          "passed": true,
+          "evidence": "The iteration-5 helper received and reported the documented scope."
+        },
+        {
+          "text": "For HTTP 403, the response includes the exact scope creator-store-save:read and literal URL https://create.roblox.com/dashboard/credentials?activeTab=ApiKeysTab.",
+          "passed": true,
+          "evidence": "Both exact values appear."
+        },
+        {
+          "text": "For HTTP 403, the response directs the user to verify API operations, resource restrictions, IP restrictions, and key status or expiration.",
+          "passed": true,
+          "evidence": "Line 6 covers every required check."
+        },
+        {
+          "text": "For HTTP 403, the response distinguishes authorization from credential absence and says the existing configured key's permissions or restrictions must be edited.",
+          "passed": false,
+          "evidence": "Although the configured label and permission checks are present, the response never explicitly identifies authorization as distinct from credential absence or says to edit the existing configured key."
+        },
+        {
+          "text": "For HTTP 403, the response does not tell the user to create a key, set or re-enter ROBLOX_OPEN_CLOUD_API_KEY, or restart/relaunch the agent.",
+          "passed": true,
+          "evidence": "No missing-key setup or restart advice appears."
+        },
+        {
+          "text": "The user-facing response and labels are Japanese while exact identifiers and URLs remain untranslated, and no mutation occurs.",
+          "passed": true,
+          "evidence": "Japanese labels/prose, exact identifiers, and no mutation are all present."
+        }
+      ],
+      "notes": [
+        "The baseline leaves the auth-vs-authorization distinction implicit."
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 23.3,
+        "stddev": 0.0,
+        "min": 23.3,
+        "max": 23.3
+      },
+      "tokens": {
+        "mean": 750.0,
+        "stddev": 0.0,
+        "min": 750,
+        "max": 750
+      }
+    },
+    "old_skill": {
+      "pass_rate": {
+        "mean": 0.875,
+        "stddev": 0.0,
+        "min": 0.875,
+        "max": 0.875
+      },
+      "time_seconds": {
+        "mean": 31.0,
+        "stddev": 0.0,
+        "min": 31.0,
+        "max": 31.0
+      },
+      "tokens": {
+        "mean": 718.0,
+        "stddev": 0.0,
+        "min": 718,
+        "max": 718
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.12",
+      "time_seconds": "-7.7",
+      "tokens": "+32"
+    }
+  },
+  "notes": [
+    "The current skill passed 8/8 assertions and explicitly states that HTTP 403 is authorization on an existing configured key, then directs the user to edit that key.",
+    "The iteration-5 snapshot passed 7/8; its fair response kept missing-key setup out, but left the credential-presence versus authorization distinction implicit.",
+    "The live read returned HTTP 403 `Scope not authorized.` in both runs. Both included the exact `creator-store-save:read` scope, literal API Key management URL, and no mutation.",
+    "An earlier iteration-5 output had incorrectly repeated environment-variable setup on 403, showing why the explicit branch separation is needed despite this baseline rerun being safer.",
+    "Task notifications did not provide token counts; the token field is the aggregator's output-character proxy.",
+    "There is one run per configuration, so timing and outcome variance are not reliability estimates."
+  ]
+}

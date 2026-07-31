@@ -1,0 +1,15 @@
+{
+  "expectations": [
+    {"text":"The configured credential gate is checked without exposing the API key.","passed":true,"evidence":"Final reports configured without key material."},
+    {"text":"Before the API call, the response or execution trace shows the live official source https://create.roblox.com/docs/cloud/openapi.json and OpenAPI 3.0.4.","passed":true,"evidence":"Final line 5 names the exact source and version."},
+    {"text":"The resolved contract is GET /toolbox-service/v1/saves with limit range 1-500, page starting at 1, and a request using limit=1&page=1.","passed":false,"evidence":"It selected GET /toolbox-service/v2/assets:search instead of the saved-assets collection."},
+    {"text":"The contract reports API-key authentication support, scope creator-store-save:read, and BETA stability.","passed":false,"evidence":"It reports creator-store-product:read for the wrong operation."},
+    {"text":"The response contract identifies GetSavesResponse with saves and totalCount.","passed":false,"evidence":"The saves response contract is absent because the wrong search operation was selected."},
+    {"text":"Only GET https://apis.roblox.com/toolbox-service/v1/saves?limit=1&page=1 is executed through scripts/open_cloud_request.py with creator-store-save:read supplied as the required scope.","passed":false,"evidence":"It executed a different Creator Store search GET."},
+    {"text":"The observed result and OpenAPI source are reported truthfully in Japanese with no mutation, secret exposure, or missing-key setup on HTTP 403.","passed":true,"evidence":"The observed search result and source are truthful and safe, although they answer the wrong task."}
+  ],
+  "summary":{"passed":3,"failed":4,"total":7,"pass_rate":0.4285714286},
+  "execution_metrics":{"output_chars":1371},
+  "timing":{"executor_duration_seconds":66.0,"total_duration_seconds":66.0},
+  "eval_feedback":{"suggestions":["Preserve the user's saved-resource qualifier when selecting among OpenAPI candidates."],"overall":"OpenAPI use was traceable, but candidate selection substituted generic search for saved assets."}
+}

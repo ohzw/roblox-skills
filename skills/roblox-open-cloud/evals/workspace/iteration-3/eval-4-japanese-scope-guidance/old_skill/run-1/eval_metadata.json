@@ -1,0 +1,5 @@
+{
+  "eval_id": 4,
+  "eval_name": "japanese-scope-guidance",
+  "prompt": "設定済みのRoblox Open Cloud APIキーを使い、副作用のないCreator Store検索APIで `tree` を検索して認証をEvalしてください。API呼び出し以外の変更はしないでください。権限不足なら、追加すべき権限を正確なscope名で示してください。"
+}

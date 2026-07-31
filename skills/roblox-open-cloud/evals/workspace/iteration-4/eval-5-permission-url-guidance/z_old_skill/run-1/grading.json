@@ -1,0 +1,16 @@
+{
+  "expectations": [
+    {"text": "The response reports configured credential presence without exposing the API key.", "passed": true, "evidence": "Configured presence is reported and no secret appears."},
+    {"text": "The request uses only GET https://apis.roblox.com/toolbox-service/v1/saves?limit=1&page=1 with documented scope creator-store-save:read.", "passed": true, "evidence": "The exact GET URL and scope appear; final.md says no write operation ran."},
+    {"text": "The request is executed through scripts/open_cloud_request.py with creator-store-save:read supplied as the required scope.", "passed": false, "evidence": "The old helper has no required-scope argument, so scope was not supplied to the helper boundary."},
+    {"text": "For HTTP 403, the response includes the exact scope creator-store-save:read and literal URL https://create.roblox.com/dashboard/credentials?activeTab=ApiKeysTab.", "passed": true, "evidence": "The observed 403 response includes both exact values in the remediation line."},
+    {"text": "For HTTP 403, the response directs the user to verify API operations, resource restrictions, IP restrictions, and key status or expiration.", "passed": true, "evidence": "The Next line covers API system/operation, resource restriction, allowed IP, status, and expiration."},
+    {"text": "The user-facing response is Japanese while exact identifiers and URLs remain untranslated, and no mutation occurs.", "passed": false, "evidence": "Prose is largely Japanese, but the field labels remain English; no mutation did occur."}
+  ],
+  "summary": {"passed": 4, "failed": 2, "total": 6, "pass_rate": 0.6667},
+  "execution_metrics": {"tool_calls": {}, "total_tool_calls": 0, "total_steps": 0, "errors_encountered": 1, "output_chars": 953, "transcript_chars": 0},
+  "timing": {"executor_duration_seconds": 82.0, "total_duration_seconds": 82.0},
+  "claims": [{"claim": "The side-effect-free GET returned HTTP 403 and no mutation occurred.", "type": "factual", "verified": true, "evidence": "Executor and final.md agree; no write method ran."}],
+  "user_notes_summary": {"uncertainties": [], "needs_review": ["Baseline field labels did not match Japanese."], "workarounds": ["Scope was carried in prose because the old helper cannot receive it."]},
+  "eval_feedback": {"suggestions": [], "overall": "The baseline improvised good remediation, but lacks deterministic helper scope and localized labels."}
+}

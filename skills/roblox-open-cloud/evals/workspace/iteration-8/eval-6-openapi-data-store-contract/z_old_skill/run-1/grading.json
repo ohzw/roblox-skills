@@ -1,0 +1,14 @@
+{
+  "expectations": [
+    {"text":"The configured credential gate is checked without exposing the API key.","passed":true,"evidence":"Final reports configured and no key material."},
+    {"text":"Before the API call, the response or execution trace shows the live official source https://create.roblox.com/docs/cloud/openapi.json and OpenAPI 3.0.4.","passed":false,"evidence":"Final says only generic official OpenAPI and gives no live URL or version."},
+    {"text":"The resolved contract is GET /cloud/v2/universes/{universe_id}/data-stores with maxPageSize=1, scope universe-datastores.control:list, and STABLE stability.","passed":false,"evidence":"Method/path/query are right, but it incorrectly uses universe-datastores.read."},
+    {"text":"The contract identifies ListDataStoresResponse, including dataStores and nextPageToken, and cites https://create.roblox.com/docs/cloud/reference/features/storage#Cloud_ListDataStores.","passed":false,"evidence":"It omits the schema name and operation reference URL."},
+    {"text":"Only GET https://apis.roblox.com/cloud/v2/universes/987654321/data-stores?maxPageSize=1 is executed through scripts/open_cloud_request.py with universe-datastores.control:list supplied as the required scope.","passed":false,"evidence":"The helper was called with the wrong scope universe-datastores.read."},
+    {"text":"The observed HTTP result is reported truthfully in Japanese with a contract-source label, no mutation, and no secret exposure.","passed":true,"evidence":"It truthfully reports HTTP 401 in Japanese and no mutation or secret."}
+  ],
+  "summary":{"passed":2,"failed":4,"total":6,"pass_rate":0.3333333333},
+  "execution_metrics":{"output_chars":992},
+  "timing":{"executor_duration_seconds":73.0,"total_duration_seconds":73.0},
+  "eval_feedback":{"suggestions":["Use the live official OpenAPI operation instead of guessing the scope."],"overall":"Safe execution, but the inferred scope was wrong and schema provenance was incomplete."}
+}
