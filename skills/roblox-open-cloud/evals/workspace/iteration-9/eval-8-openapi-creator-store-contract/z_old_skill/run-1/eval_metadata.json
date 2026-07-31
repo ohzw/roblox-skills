@@ -1,1 +1,0 @@
-{"eval_id":8,"eval_name":"openapi-creator-store-contract","prompt":"Roblox Open Cloudで保存済みCreator Store assetを1件読み取ってください。公式OpenAPI JSONからlimit/pageの制約、認証方式、scope、安定性を確認してから実行し、日本語で根拠も報告してください。変更禁止。"}

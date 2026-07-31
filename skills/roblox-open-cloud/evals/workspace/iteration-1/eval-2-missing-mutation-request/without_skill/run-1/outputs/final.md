@@ -1,1 +1,0 @@
-実行できませんでした。Open Cloud API キーがこの環境に設定されていないため、experience 24681012 の topic `maintenance` への publish は実行していません。代替の変更や別の API 呼び出しも行っていません。

@@ -1,6 +1,0 @@
-{
-  "total_tokens": null,
-  "duration_ms": 101000,
-  "total_duration_seconds": 101.0,
-  "note": "The task notification reported duration rounded to 1m41s and did not expose a token count."
-}

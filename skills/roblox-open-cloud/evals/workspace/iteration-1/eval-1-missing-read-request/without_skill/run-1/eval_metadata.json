@@ -1,5 +1,0 @@
-{
-  "eval_id": 1,
-  "eval_name": "missing-read-request",
-  "prompt": "Roblox Open Cloudでuniverse 987654321のData Store一覧を取得して結果を日本語で要約して。APIキーは環境変数に入っているはずです。"
-}

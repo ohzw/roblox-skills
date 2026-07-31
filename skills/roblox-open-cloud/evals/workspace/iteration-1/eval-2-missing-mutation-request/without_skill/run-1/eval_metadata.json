@@ -1,5 +1,0 @@
-{
-  "eval_id": 2,
-  "eval_name": "missing-mutation-request",
-  "prompt": "Open Cloud APIでexperience 24681012へメッセージをpublishして。topicはmaintenance、messageはserver restart in 5 minutes。すぐ実行して大丈夫です。"
-}
