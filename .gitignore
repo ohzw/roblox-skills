@@ -6,3 +6,4 @@ __pycache__/
 *.log
 skills/roblox-open-cloud/evals/workspace/
 skills/roblox-open-cloud/evals/evals.json
+skills/roblox-open-cloud/evals/
