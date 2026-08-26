@@ -52,7 +52,12 @@ After the gate succeeds:
 8. Execute only through the request helper. Do not use raw `curl`, HTTP libraries in ad-hoc code, browser JavaScript, Roblox Studio HTTP tools, or shell interpolation of the key.
 9. Separate credential presence, authentication, and authorization before giving remediation:
    - Gate `configured: false`: no key reached the agent process. Open the creation page, explain how to set `ROBLOX_OPEN_CLOUD_API_KEY`, and stop.
-   - Gate `configured: true` plus HTTP `401`: a key is present but Roblox rejected authentication. Say the environment variable is configured; ask the user to verify the existing key's enabled/status/expiration or regenerate it if invalid. Do not misreport it as missing.
+   - Gate `configured: true` plus HTTP `401`: a key is present but Roblox rejected authentication. Do not misreport it as missing. Use the current API Key management reference and Creator Dashboard status to give status-specific remediation:
+     - `Disabled`: enable **Enable Key**.
+     - `Expired`: remove or change the expiration date.
+     - `Auto-Expired`: the key was neither used nor updated for 60 days; toggle **Enable Key** off and on, or update a key property.
+     - `Revoked` or `Moderated`: regenerate the key.
+     - `User Moderated`: resolve the generating account's moderation issue.
    - Gate `configured: true` plus HTTP `403`: the key is present and the failure is authorization, not environment setup. Report every documented required scope, include the literal API Key management URL `https://create.roblox.com/dashboard/credentials?activeTab=ApiKeysTab`, and ask the user to edit the existing key's API operations, target experience/resource restrictions, accepted IPs, and status. Do not tell the user to create a key, set the environment variable, restart the agent, or paste/re-enter the key. A bare “Creator Dashboard” mention is insufficient.
    Keep the credential-gate setup instructions out of `401` and `403` responses; mixing those branches makes users troubleshoot the wrong problem.
 10. Follow documented asynchronous operations to their terminal status. A side-effect-free `POST` query can require a result/status poll without becoming a mutation.
@@ -158,7 +163,7 @@ The helper accepts `GET`, `POST`, `PUT`, `PATCH`, and `DELETE`; only `https://ap
 
 ## Key creation guidance
 
-When setup is required, point the user to the Creator Dashboard page already opened by the helper. Recommend a separate key per automation, the minimum operation scopes, restriction to the specific experience/resources where supported, an IP restriction when the caller has a stable IP, and an expiration/rotation policy appropriate to the automation. For group automation, recommend a dedicated account with only the required group role.
+When setup is required, point the user to the Creator Dashboard page already opened by the helper. Recommend a separate key per automation, the minimum operation scopes, restriction to the specific experience/resources where supported, an IP restriction when the caller has a stable IP, and an expiration/rotation policy appropriate to the automation. Warn that Roblox automatically marks a key `Auto-Expired` when it has been neither used nor updated for 60 days, even without a configured expiration date; long-running automation needs status monitoring and a recovery/rotation procedure. For group automation, recommend a dedicated account with only the required group role.
 
 Official references:
 
