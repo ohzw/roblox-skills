@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import mimetypes
 import os
+import secrets
 import ssl
 import subprocess
 import sys
@@ -90,6 +92,61 @@ def read_body(path_value: str | None) -> bytes | None:
     return path.read_bytes()
 
 
+def parse_multipart_file(value: str) -> tuple[str, Path]:
+    field, separator, path_value = value.partition("=")
+    if not separator or not field or not path_value:
+        raise ValueError("Multipart files must use FIELD=PATH")
+    if any(character in field for character in '\r\n"'):
+        raise ValueError("Multipart field names cannot contain quotes or line breaks")
+    path = Path(path_value)
+    if not path.is_file():
+        raise ValueError(f"Multipart file does not exist: {path}")
+    if any(character in path.name for character in "\r\n"):
+        raise ValueError("Multipart filenames cannot contain line breaks")
+    return field, path
+
+
+def quote_multipart_value(value: str) -> str:
+    return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def build_multipart_body(values: list[str]) -> tuple[bytes, str]:
+    boundary = f"roblox-open-cloud-{secrets.token_hex(24)}"
+    body = bytearray()
+    for value in values:
+        field, path = parse_multipart_file(value)
+        content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+        body.extend(f"--{boundary}\r\n".encode("ascii"))
+        body.extend(
+            (
+                'Content-Disposition: form-data; '
+                f'name="{quote_multipart_value(field)}"; '
+                f'filename="{quote_multipart_value(path.name)}"\r\n'
+            ).encode("utf-8")
+        )
+        body.extend(f"Content-Type: {content_type}\r\n\r\n".encode("ascii"))
+        body.extend(path.read_bytes())
+        body.extend(b"\r\n")
+    body.extend(f"--{boundary}--\r\n".encode("ascii"))
+    return bytes(body), f"multipart/form-data; boundary={boundary}"
+
+
+def read_request_body(args: argparse.Namespace) -> tuple[bytes | None, str | None]:
+    if args.data_file is not None and args.multipart_file:
+        raise ValueError("--data-file and --multipart-file are mutually exclusive")
+    if args.multipart_file:
+        if args.content_type is not None:
+            raise ValueError("--content-type is generated automatically for multipart requests")
+        return build_multipart_body(args.multipart_file)
+    body = read_body(args.data_file)
+    if body is None:
+        return None, None
+    content_type = args.content_type or "application/json"
+    if content_type.partition(";")[0].strip().lower() == "multipart/form-data":
+        raise ValueError("Use --multipart-file instead of a hand-built multipart body")
+    return body, content_type
+
+
 def redact(data: bytes, secret: str) -> bytes:
     secret_bytes = secret.encode("utf-8")
     return data.replace(secret_bytes, b"[REDACTED]") if secret_bytes else data
@@ -125,7 +182,7 @@ def request_command(args: argparse.Namespace) -> int:
         if method not in ALLOWED_METHODS:
             raise ValueError(f"Unsupported method: {method}")
         url = validate_url(args.url)
-        body = read_body(args.data_file)
+        body, content_type = read_request_body(args)
         if body is not None and method == "GET":
             raise ValueError("GET requests cannot include a body")
 
@@ -134,8 +191,8 @@ def request_command(args: argparse.Namespace) -> int:
             "User-Agent": "roblox-open-cloud-skill/1",
             "x-api-key": key,
         }
-        if body is not None:
-            headers["Content-Type"] = args.content_type
+        if content_type is not None:
+            headers["Content-Type"] = content_type
 
         request = urllib.request.Request(url, data=body, headers=headers, method=method)
         opener = urllib.request.build_opener(
@@ -234,7 +291,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="Exact documented permission scope; repeat for multiple scopes",
     )
     request_parser.add_argument("--data-file")
-    request_parser.add_argument("--content-type", default="application/json")
+    request_parser.add_argument("--content-type")
+    request_parser.add_argument(
+        "--multipart-file",
+        action="append",
+        default=[],
+        metavar="FIELD=PATH",
+        help="Binary multipart field; repeat the option for array fields",
+    )
     request_parser.add_argument("--accept", default="application/json")
     request_parser.add_argument("--output")
     request_parser.add_argument("--timeout", type=float, default=30.0)

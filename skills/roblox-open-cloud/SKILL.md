@@ -35,9 +35,9 @@ After the gate succeeds:
 
 1. Query the current official OpenAPI document before constructing the request:
    - Preserve the user's action, resource, and state qualifiers before searching. Terms such as saved, archived, pending, version, entry, and collection distinguish different resources; dropping one can produce a valid call that answers the wrong task.
-   - Derive a method filter from the requested effect when possible: read/get/list is `GET`; a mutation keeps its documented method and still follows the authorization gate. Pass distinctive qualifiers with repeated `--required-term` so a generic candidate cannot outrank the requested resource.
+   - Apply a method filter only when the operation contract makes the method known. Read-only operations are not necessarily `GET`: searches, analytics queries, calculations, and other side-effect-free actions may use `POST`. If the method is uncertain, search without `--method`, compare candidates by operation semantics, then resolve the selected exact path and method. Determine mutation status from the documented effect, not from the HTTP method alone. Pass distinctive qualifiers with repeated `--required-term` so a generic candidate cannot outrank the requested resource.
    - Search for multiple candidates with `scripts/openapi_lookup.py search`. Compare path, method, summary, operation ID, scopes, and mutation effect. Select a candidate only when all user-requested qualifiers are represented.
-   - **Prefer `/cloud/v2/` endpoints**: When searching for candidates, prioritize `/cloud/v2/` endpoints over legacy `/v1/` web paths (e.g. `/v1/universes/...` which frequently return 404 on `apis.roblox.com`). Only use `/v1/` paths for services where v1 remains the active Open Cloud standard (e.g., `/datastores/v1/...`).
+   - Prefer the current operation for the requested resource, using `x-roblox-deprecated`, `x-roblox-alternatives`, stability, and the linked reference to distinguish it from obsolete web endpoints. Prefer `/cloud/v2/` when it is the current form of that same resource, but do not classify an OpenAPI-documented service path as legacy merely because it contains `/v1/`; active services also use paths such as `/datastores/v1/` and other service-specific versioned prefixes.
    - Resolve the selected exact path and method with `scripts/openapi_lookup.py operation`. If the user asks for saved Creator Store assets, resolve the `saves` collection; do not substitute general asset search merely because it returns assets.
    - When `found: true`, use the returned method, server, path, parameters, request body, responses, `security`, and referenced schemas as the machine-readable contract. Read `external_docs` as well when present; it carries semantics and constraints that a schema cannot express.
 2. Treat `found: false` or `fallback_required: true` as an OpenAPI coverage gap, not evidence that the API does not exist. Read the current official Roblox feature or domain reference and its linked operation section. Record that the contract came from the official-reference fallback. Never invent a path, field, or scope to fill the gap.
@@ -45,15 +45,19 @@ After the gate succeeds:
 4. If the OpenAPI operation and its current official reference disagree on method, path, body, scope, or mutation effect, do not guess. State the conflict and stop before calling the API, especially for mutations.
 5. State the exact documented scope names and their source before the request. Note that `--required-scope` is a mandatory option for `open_cloud_request.py request`. Pass each scope with a separate `--required-scope`. If the OpenAPI schema specifies `scopes: []` (empty array), pass a standard domain-appropriate scope (e.g. `universe:read` for Universes/Places read operations) to satisfy helper validation.
 6. For a mutation, state the target resource and intended effect before execution. If the user's request already clearly authorizes that exact mutation, proceed; otherwise request confirmation.
-7. Put JSON request bodies in a temporary file outside the repository. Never put credentials in that file.
+7. Preserve the OpenAPI media-type contract and keep generated body artifacts out of the repository:
+   - Put generated JSON and raw binary bodies in a temporary file outside the repository and pass it with `--data-file` plus the exact documented `--content-type`.
+   - For `multipart/form-data`, pass each documented binary field as `--multipart-file FIELD=PATH`; repeat the option for array fields. The helper constructs the MIME boundary and body. Do not hand-build multipart bodies or set their `Content-Type`.
+   - Never put credentials in a body file or multipart field.
 8. Execute only through the request helper. Do not use raw `curl`, HTTP libraries in ad-hoc code, browser JavaScript, Roblox Studio HTTP tools, or shell interpolation of the key.
 9. Separate credential presence, authentication, and authorization before giving remediation:
    - Gate `configured: false`: no key reached the agent process. Open the creation page, explain how to set `ROBLOX_OPEN_CLOUD_API_KEY`, and stop.
    - Gate `configured: true` plus HTTP `401`: a key is present but Roblox rejected authentication. Say the environment variable is configured; ask the user to verify the existing key's enabled/status/expiration or regenerate it if invalid. Do not misreport it as missing.
    - Gate `configured: true` plus HTTP `403`: the key is present and the failure is authorization, not environment setup. Report every documented required scope, include the literal API Key management URL `https://create.roblox.com/dashboard/credentials?activeTab=ApiKeysTab`, and ask the user to edit the existing key's API operations, target experience/resource restrictions, accepted IPs, and status. Do not tell the user to create a key, set the environment variable, restart the agent, or paste/re-enter the key. A bare “Creator Dashboard” mention is insufficient.
    Keep the credential-gate setup instructions out of `401` and `403` responses; mixing those branches makes users troubleshoot the wrong problem.
-10. For mutations, perform the documented read-back when one exists and report the observed result separately from the initial response.
-11. Remove temporary request/response files containing user data when they are no longer needed. Do not delete user-authored files.
+10. Follow documented asynchronous operations to their terminal status. A side-effect-free `POST` query can require a result/status poll without becoming a mutation.
+11. For mutations, perform the documented read-back when one exists and report the observed result separately from the initial response.
+12. Remove temporary request/response files containing user data when they are no longer needed. Do not delete user-authored files.
 
 ## OpenAPI lookup commands
 
@@ -120,6 +124,17 @@ python3 scripts/open_cloud_request.py request \
   --data-file /tmp/roblox-open-cloud-request.json
 ```
 
+Multipart upload with a repeated binary field:
+
+```bash
+python3 scripts/open_cloud_request.py request \
+  --method POST \
+  --url 'https://apis.roblox.com/EXACT_DOCUMENTED_PATH' \
+  --required-scope 'EXACT_DOCUMENTED_WRITE_SCOPE' \
+  --multipart-file 'files=/path/to/thumbnail-1.png' \
+  --multipart-file 'files=/path/to/thumbnail-2.png'
+```
+
 Save a response without printing its body:
 
 ```bash
@@ -130,7 +145,7 @@ python3 scripts/open_cloud_request.py request \
   --output /tmp/roblox-open-cloud-response.json
 ```
 
-The helper accepts `GET`, `POST`, `PUT`, `PATCH`, and `DELETE`; only `https://apis.roblox.com` is allowed. Repeat `--required-scope` when an operation requires multiple scopes. The helper reports those scopes and the credential dashboard on `403`. It does not follow redirects because forwarding an authenticated header to a redirected destination can leak a credential.
+The helper accepts `GET`, `POST`, `PUT`, `PATCH`, and `DELETE`; only `https://apis.roblox.com` is allowed. Repeat `--required-scope` when an operation requires multiple scopes. Use `--data-file` for one raw body or repeat `--multipart-file FIELD=PATH` for documented multipart binary fields; these modes are mutually exclusive, and the helper generates the multipart boundary. The helper reports required scopes and the credential dashboard on `403`. It does not follow redirects because forwarding an authenticated header to a redirected destination can leak a credential.
 
 ## Credential safety boundary
 
