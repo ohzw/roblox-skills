@@ -106,14 +106,29 @@ def parse_multipart_file(value: str) -> tuple[str, Path]:
     return field, path
 
 
+def parse_multipart_field(value: str) -> tuple[str, str]:
+    field, separator, field_value = value.partition("=")
+    if not separator or not field:
+        raise ValueError("Multipart fields must use FIELD=VALUE")
+    if any(character in field for character in '\r\n"'):
+        raise ValueError("Multipart field names cannot contain quotes or line breaks")
+    return field, field_value
+
+
 def quote_multipart_value(value: str) -> str:
     return value.replace("\\", "\\\\").replace('"', '\\"')
 
 
-def build_multipart_body(values: list[str]) -> tuple[bytes, str]:
+def build_multipart_body(files: list[str], fields: list[str]) -> tuple[bytes, str]:
     boundary = f"roblox-open-cloud-{secrets.token_hex(24)}"
     body = bytearray()
-    for value in values:
+    for value in fields:
+        field, field_value = parse_multipart_field(value)
+        body.extend(f"--{boundary}\r\n".encode("ascii"))
+        body.extend(f'Content-Disposition: form-data; name="{quote_multipart_value(field)}"\r\n\r\n'.encode("utf-8"))
+        body.extend(field_value.encode("utf-8"))
+        body.extend(b"\r\n")
+    for value in files:
         field, path = parse_multipart_file(value)
         content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
         body.extend(f"--{boundary}\r\n".encode("ascii"))
@@ -132,18 +147,18 @@ def build_multipart_body(values: list[str]) -> tuple[bytes, str]:
 
 
 def read_request_body(args: argparse.Namespace) -> tuple[bytes | None, str | None]:
-    if args.data_file is not None and args.multipart_file:
-        raise ValueError("--data-file and --multipart-file are mutually exclusive")
-    if args.multipart_file:
+    if args.data_file is not None and (args.multipart_file or args.multipart_field):
+        raise ValueError("--data-file and multipart options are mutually exclusive")
+    if args.multipart_file or args.multipart_field:
         if args.content_type is not None:
             raise ValueError("--content-type is generated automatically for multipart requests")
-        return build_multipart_body(args.multipart_file)
+        return build_multipart_body(args.multipart_file, args.multipart_field)
     body = read_body(args.data_file)
     if body is None:
         return None, None
     content_type = args.content_type or "application/json"
     if content_type.partition(";")[0].strip().lower() == "multipart/form-data":
-        raise ValueError("Use --multipart-file instead of a hand-built multipart body")
+        raise ValueError("Use multipart options instead of a hand-built multipart body")
     return body, content_type
 
 
@@ -298,6 +313,13 @@ def build_parser() -> argparse.ArgumentParser:
         default=[],
         metavar="FIELD=PATH",
         help="Binary multipart field; repeat the option for array fields",
+    )
+    request_parser.add_argument(
+        "--multipart-field",
+        action="append",
+        default=[],
+        metavar="FIELD=VALUE",
+        help="Text multipart field; repeat for multiple form fields",
     )
     request_parser.add_argument("--accept", default="application/json")
     request_parser.add_argument("--output")

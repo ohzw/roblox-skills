@@ -12,7 +12,7 @@ import open_cloud_request
 
 
 class MultipartBodyTests(unittest.TestCase):
-    def test_repeated_file_field_builds_valid_multipart_body(self) -> None:
+    def test_text_and_repeated_file_fields_build_valid_multipart_body(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             first = Path(directory, "first.png")
             second = Path(directory, "second.jpg")
@@ -21,7 +21,8 @@ class MultipartBodyTests(unittest.TestCase):
 
             with mock.patch.object(open_cloud_request.secrets, "token_hex", return_value="fixed"):
                 body, content_type = open_cloud_request.build_multipart_body(
-                    [f"files={first}", f"files={second}"]
+                    [f"files={first}", f"files={second}"],
+                    ["name=Example asset", "description=テスト=値"],
                 )
 
         self.assertEqual(
@@ -29,6 +30,8 @@ class MultipartBodyTests(unittest.TestCase):
             "multipart/form-data; boundary=roblox-open-cloud-fixed",
         )
         self.assertEqual(body.count(b'name="files"'), 2)
+        self.assertIn(b'name="name"\r\n\r\nExample asset', body)
+        self.assertIn('name="description"\r\n\r\nテスト=値'.encode(), body)
         self.assertIn(b'filename="first.png"', body)
         self.assertIn(b'filename="second.jpg"', body)
         self.assertIn(b"Content-Type: image/png", body)
@@ -41,6 +44,18 @@ class MultipartBodyTests(unittest.TestCase):
         args = argparse.Namespace(
             data_file="request.json",
             multipart_file=["files=thumbnail.png"],
+            multipart_field=[],
+            content_type=None,
+        )
+
+        with self.assertRaisesRegex(ValueError, "mutually exclusive"):
+            open_cloud_request.read_request_body(args)
+
+    def test_data_file_and_multipart_field_are_mutually_exclusive(self) -> None:
+        args = argparse.Namespace(
+            data_file="request.json",
+            multipart_file=[],
+            multipart_field=["name=value"],
             content_type=None,
         )
 
@@ -51,6 +66,7 @@ class MultipartBodyTests(unittest.TestCase):
         args = argparse.Namespace(
             data_file=None,
             multipart_file=["files=thumbnail.png"],
+            multipart_field=[],
             content_type="multipart/form-data; boundary=unsafe",
         )
 
@@ -64,10 +80,11 @@ class MultipartBodyTests(unittest.TestCase):
             args = argparse.Namespace(
                 data_file=str(body_path),
                 multipart_file=[],
+                multipart_field=[],
                 content_type="multipart/form-data; boundary=manual",
             )
 
-            with self.assertRaisesRegex(ValueError, "Use --multipart-file"):
+            with self.assertRaisesRegex(ValueError, "Use multipart options"):
                 open_cloud_request.read_request_body(args)
 
     def test_raw_body_defaults_to_json(self) -> None:
@@ -77,6 +94,7 @@ class MultipartBodyTests(unittest.TestCase):
             args = argparse.Namespace(
                 data_file=str(body_path),
                 multipart_file=[],
+                multipart_field=[],
                 content_type=None,
             )
 

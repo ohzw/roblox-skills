@@ -47,7 +47,7 @@ After the gate succeeds:
 6. For a mutation, state the target resource and intended effect before execution. If the user's request already clearly authorizes that exact mutation, proceed; otherwise request confirmation.
 7. Preserve the OpenAPI media-type contract and keep generated body artifacts out of the repository:
    - Put generated JSON and raw binary bodies in a temporary file outside the repository and pass it with `--data-file` plus the exact documented `--content-type`.
-   - For `multipart/form-data`, pass each documented binary field as `--multipart-file FIELD=PATH`; repeat the option for array fields. The helper constructs the MIME boundary and body. Do not hand-build multipart bodies or set their `Content-Type`.
+   - For `multipart/form-data`, pass documented text fields as repeated `--multipart-field FIELD=VALUE` options and binary fields as `--multipart-file FIELD=PATH`; repeat either option when the API accepts repeated fields. The helper constructs the MIME boundary and body. Do not hand-build multipart bodies or set their `Content-Type`.
    - Never put credentials in a body file or multipart field.
 8. Execute only through the request helper. Do not use raw `curl`, HTTP libraries in ad-hoc code, browser JavaScript, Roblox Studio HTTP tools, or shell interpolation of the key.
 9. Separate credential presence, authentication, and authorization before giving remediation:
@@ -129,15 +129,16 @@ python3 scripts/open_cloud_request.py request \
   --data-file /tmp/roblox-open-cloud-request.json
 ```
 
-Multipart upload with a repeated binary field:
+Multipart form fields and files:
 
 ```bash
 python3 scripts/open_cloud_request.py request \
-  --method POST \
+  --method PATCH \
   --url 'https://apis.roblox.com/EXACT_DOCUMENTED_PATH' \
   --required-scope 'EXACT_DOCUMENTED_WRITE_SCOPE' \
-  --multipart-file 'files=/path/to/thumbnail-1.png' \
-  --multipart-file 'files=/path/to/thumbnail-2.png'
+  --multipart-field 'name=New name' \
+  --multipart-field 'description=New description' \
+  --multipart-file 'imageFile=/path/to/icon.png'
 ```
 
 Save a response without printing its body:
@@ -150,7 +151,7 @@ python3 scripts/open_cloud_request.py request \
   --output /tmp/roblox-open-cloud-response.json
 ```
 
-The helper accepts `GET`, `POST`, `PUT`, `PATCH`, and `DELETE`; only `https://apis.roblox.com` is allowed. Repeat `--required-scope` when an operation requires multiple scopes. Use `--data-file` for one raw body or repeat `--multipart-file FIELD=PATH` for documented multipart binary fields; these modes are mutually exclusive, and the helper generates the multipart boundary. The helper reports required scopes and the credential dashboard on `403`. It does not follow redirects because forwarding an authenticated header to a redirected destination can leak a credential.
+The helper accepts `GET`, `POST`, `PUT`, `PATCH`, and `DELETE`; only `https://apis.roblox.com` is allowed. Repeat `--required-scope` when an operation requires multiple scopes. Use `--data-file` for one raw body, or use repeated `--multipart-field FIELD=VALUE` and `--multipart-file FIELD=PATH` options for documented multipart fields and binary parts; these modes are mutually exclusive, and the helper generates the multipart boundary. The helper reports required scopes and the credential dashboard on `403`. It does not follow redirects because forwarding an authenticated header to a redirected destination can leak a credential.
 
 ## Credential safety boundary
 
