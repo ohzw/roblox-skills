@@ -24,6 +24,16 @@ Install a specific skill:
 npx skills add ohzw/roblox-skills --skill roblox-open-cloud -g
 ```
 
+Install into a project (`.agents/skills/`, recorded in `skills-lock.json`):
+
+```bash
+npx skills add ohzw/roblox-skills --skill roblox-open-cloud
+```
+
+### roblox-open-cloud credentials and mutations
+
+The request helper reads `ROBLOX_OPEN_CLOUD_API_KEY` from its process environment, or from the `.env` file in the directory it runs in. Keep `.env` git-ignored and let only the helper read it. Requests other than `GET` print a plan and send nothing until `--apply` is passed; `introspect` shows the configured key's scopes and status.
+
 ## Local Development
 
 ```bash

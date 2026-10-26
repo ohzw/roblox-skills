@@ -7,6 +7,7 @@ import argparse
 import json
 import mimetypes
 import os
+import re
 import secrets
 import ssl
 import subprocess
@@ -17,10 +18,14 @@ import urllib.request
 from pathlib import Path
 
 API_KEY_ENV = "ROBLOX_OPEN_CLOUD_API_KEY"
+DOTENV_NAME = ".env"
 CREDENTIALS_URL = "https://create.roblox.com/dashboard/credentials?activeTab=ApiKeysTab"
+INTROSPECT_URL = "https://apis.roblox.com/api-keys/v1/introspect"
 ALLOWED_HOST = "apis.roblox.com"
 ALLOWED_METHODS = frozenset({"GET", "POST", "PUT", "PATCH", "DELETE"})
 MAX_ERROR_BODY_BYTES = 1_048_576
+USER_AGENT = "roblox-open-cloud-skill/1"
+DOTENV_LINE = re.compile(r"^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$")
 
 
 class NoRedirectHandler(urllib.request.HTTPRedirectHandler):
@@ -28,14 +33,45 @@ class NoRedirectHandler(urllib.request.HTTPRedirectHandler):
         raise urllib.error.HTTPError(req.full_url, code, "Redirect blocked", headers, fp)
 
 
-def emit_json(payload: dict[str, object], *, stream=sys.stdout) -> None:
+def emit_json(payload: dict[str, object], *, stream=None) -> None:  # noqa: ANN001
+    stream = stream or sys.stdout
     json.dump(payload, stream, ensure_ascii=False)
     stream.write("\n")
 
 
-def credential() -> str | None:
+def dotenv_value(path: Path, name: str) -> str | None:
+    """Read one variable from a dotenv file; the last assignment wins."""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+    found = None
+    for line in text.splitlines():
+        match = DOTENV_LINE.match(line)
+        if match is None or match.group(1) != name:
+            continue
+        value = match.group(2).strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            value = value[1:-1]
+        else:
+            value = re.sub(r"\s+#.*$", "", value).strip()
+        found = value or None
+    return found
+
+
+def dotenv_path() -> Path:
+    return Path.cwd() / DOTENV_NAME
+
+
+def credential() -> tuple[str | None, str | None]:
+    """Return the key and where it came from: the environment first, then ./.env."""
     value = os.environ.get(API_KEY_ENV)
-    return value if value else None
+    if value:
+        return value, "environment"
+    value = dotenv_value(dotenv_path(), API_KEY_ENV)
+    if value:
+        return value, DOTENV_NAME
+    return None, None
 
 
 def open_credentials_page() -> bool:
@@ -53,19 +89,36 @@ def open_credentials_page() -> bool:
 
 
 def check_command(args: argparse.Namespace) -> int:
-    configured = credential() is not None
+    key, source = credential()
+    configured = key is not None
     opened = False
     if not configured and args.open_on_missing:
         opened = open_credentials_page()
     emit_json(
         {
             "configured": configured,
+            "source": source,
             "environment_variable": API_KEY_ENV,
+            "dotenv_file": str(dotenv_path()),
             "credentials_page_opened": opened,
             "credentials_url": CREDENTIALS_URL if not configured else None,
         }
     )
     return 0 if configured else 2
+
+
+def report_missing_credential() -> int:
+    emit_json(
+        {
+            "error": "credential_missing",
+            "configured": False,
+            "environment_variable": API_KEY_ENV,
+            "dotenv_file": str(dotenv_path()),
+            "credentials_url": CREDENTIALS_URL,
+        },
+        stream=sys.stderr,
+    )
+    return 2
 
 
 def validate_url(value: str) -> str:
@@ -178,53 +231,36 @@ def write_response(data: bytes, output: str | None) -> None:
     destination.write_bytes(data)
 
 
-def request_command(args: argparse.Namespace) -> int:
-    key = credential()
-    if key is None:
-        emit_json(
-            {
-                "error": "credential_missing",
-                "configured": False,
-                "environment_variable": API_KEY_ENV,
-                "credentials_url": CREDENTIALS_URL,
-            },
-            stream=sys.stderr,
-        )
-        return 2
+def open_request(request: urllib.request.Request, timeout: float):  # noqa: ANN201
+    opener = urllib.request.build_opener(
+        NoRedirectHandler(),
+        urllib.request.HTTPSHandler(context=ssl.create_default_context()),
+    )
+    return opener.open(request, timeout=timeout)
 
+
+def send(
+    request: urllib.request.Request,
+    key: str,
+    *,
+    required_scopes: list[str],
+    output: str | None,
+    timeout: float,
+) -> int:
+    method = request.get_method()
+    url = request.full_url
     try:
-        method = args.method.upper()
-        if method not in ALLOWED_METHODS:
-            raise ValueError(f"Unsupported method: {method}")
-        url = validate_url(args.url)
-        body, content_type = read_request_body(args)
-        if body is not None and method == "GET":
-            raise ValueError("GET requests cannot include a body")
-
-        headers = {
-            "Accept": args.accept,
-            "User-Agent": "roblox-open-cloud-skill/1",
-            "x-api-key": key,
-        }
-        if content_type is not None:
-            headers["Content-Type"] = content_type
-
-        request = urllib.request.Request(url, data=body, headers=headers, method=method)
-        opener = urllib.request.build_opener(
-            NoRedirectHandler(),
-            urllib.request.HTTPSHandler(context=ssl.create_default_context()),
-        )
-        with opener.open(request, timeout=args.timeout) as response:
+        with open_request(request, timeout) as response:
             response_body = redact(response.read(), key)
-            write_response(response_body, args.output)
+            write_response(response_body, output)
             emit_json(
                 {
                     "ok": True,
                     "status": response.status,
                     "method": method,
                     "url": url,
-                    "required_scopes": args.required_scope,
-                    "output": args.output,
+                    "required_scopes": required_scopes,
+                    "output": output,
                 },
                 stream=sys.stderr,
             )
@@ -238,10 +274,10 @@ def request_command(args: argparse.Namespace) -> int:
         error_result: dict[str, object] = {
             "ok": False,
             "status": error.code,
-            "method": args.method.upper(),
-            "url": args.url,
+            "method": method,
+            "url": url,
             "error": "http_error",
-            "required_scopes": args.required_scope,
+            "required_scopes": required_scopes,
         }
         error_result["credential_present"] = True
         if error.code == 401:
@@ -254,7 +290,7 @@ def request_command(args: argparse.Namespace) -> int:
         if error.code == 403:
             error_result["problem"] = "authorization"
             error_result["permission_guidance"] = {
-                "required_scopes": args.required_scope,
+                "required_scopes": required_scopes,
                 "credentials_url": CREDENTIALS_URL,
                 "action": "edit permissions or restrictions on the existing configured key",
                 "do_not_suggest": [
@@ -269,23 +305,98 @@ def request_command(args: argparse.Namespace) -> int:
                     "key status and expiration",
                 ],
             }
-        emit_json(
-            error_result,
-            stream=sys.stderr,
-        )
+        emit_json(error_result, stream=sys.stderr)
         return 1
-    except (OSError, ValueError, urllib.error.URLError) as error:
-        emit_json(
-            {
-                "ok": False,
-                "method": args.method.upper(),
-                "url": args.url,
-                "error": type(error).__name__,
-                "message": str(error),
-            },
-            stream=sys.stderr,
-        )
-        return 1
+    except (OSError, urllib.error.URLError) as error:
+        return report_local_error(method, url, error)
+
+
+def report_local_error(method: str, url: str, error: Exception) -> int:
+    emit_json(
+        {
+            "ok": False,
+            "method": method.upper(),
+            "url": url,
+            "error": type(error).__name__,
+            "message": str(error),
+        },
+        stream=sys.stderr,
+    )
+    return 1
+
+
+def dry_run_plan(
+    args: argparse.Namespace,
+    method: str,
+    url: str,
+    body: bytes | None,
+    content_type: str | None,
+    configured: bool,
+) -> dict[str, object]:
+    return {
+        "applied": False,
+        "method": method,
+        "url": url,
+        "required_scopes": args.required_scope,
+        "content_type": content_type.partition(";")[0] if content_type else None,
+        "body_bytes": len(body) if body is not None else 0,
+        "multipart_fields": [
+            {"name": field, "value": value} for field, value in map(parse_multipart_field, args.multipart_field)
+        ],
+        "data_file": args.data_file,
+        "multipart_files": [
+            {"name": field, "file": str(path)} for field, path in map(parse_multipart_file, args.multipart_file)
+        ],
+        "credential_configured": configured,
+        "next": "Nothing was sent. Show this plan, confirm the mutation, then rerun the same command with --apply.",
+    }
+
+
+def request_command(args: argparse.Namespace) -> int:
+    try:
+        method = args.method.upper()
+        if method not in ALLOWED_METHODS:
+            raise ValueError(f"Unsupported method: {method}")
+        url = validate_url(args.url)
+        body, content_type = read_request_body(args)
+        if body is not None and method == "GET":
+            raise ValueError("GET requests cannot include a body")
+    except (OSError, ValueError) as error:
+        return report_local_error(args.method, args.url, error)
+
+    key, _ = credential()
+    if method != "GET" and not args.apply:
+        emit_json(dry_run_plan(args, method, url, body, content_type, key is not None))
+        return 0
+    if key is None:
+        return report_missing_credential()
+
+    headers = {
+        "Accept": args.accept,
+        "User-Agent": USER_AGENT,
+        "x-api-key": key,
+    }
+    if content_type is not None:
+        headers["Content-Type"] = content_type
+    request = urllib.request.Request(url, data=body, headers=headers, method=method)
+    return send(request, key, required_scopes=args.required_scope, output=args.output, timeout=args.timeout)
+
+
+def introspect_command(args: argparse.Namespace) -> int:
+    key, _ = credential()
+    if key is None:
+        return report_missing_credential()
+    request = urllib.request.Request(
+        INTROSPECT_URL,
+        data=json.dumps({"apiKey": key}).encode("utf-8"),
+        headers={
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "User-Agent": USER_AGENT,
+        },
+        method="POST",
+    )
+    return send(request, key, required_scopes=[], output=args.output, timeout=args.timeout)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -321,10 +432,23 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="FIELD=VALUE",
         help="Text multipart field; repeat for multiple form fields",
     )
+    request_parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="Send a non-GET request; without it the request is only validated and printed",
+    )
     request_parser.add_argument("--accept", default="application/json")
     request_parser.add_argument("--output")
     request_parser.add_argument("--timeout", type=float, default=30.0)
     request_parser.set_defaults(handler=request_command)
+
+    introspect_parser = subparsers.add_parser(
+        "introspect",
+        help="Show the configured key's scopes, targets, and status via the official introspection endpoint",
+    )
+    introspect_parser.add_argument("--output")
+    introspect_parser.add_argument("--timeout", type=float, default=30.0)
+    introspect_parser.set_defaults(handler=introspect_command)
     return parser
 
 
