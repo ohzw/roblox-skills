@@ -42,7 +42,7 @@ def emit_json(payload: dict[str, object], *, stream=None) -> None:  # noqa: ANN0
 def dotenv_value(path: Path, name: str) -> str | None:
     """Read one variable from a dotenv file; the last assignment wins."""
     try:
-        text = path.read_text(encoding="utf-8")
+        text = path.read_text(encoding="utf-8-sig")
     except (OSError, UnicodeDecodeError):
         return None
     found = None
@@ -400,14 +400,19 @@ def introspect_command(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=__doc__)
+    # Abbreviations are off so `--apply` must appear literally; callers gate approvals on that exact flag.
+    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    check_parser = subparsers.add_parser("check", help="Report credential presence without reading it out")
+    check_parser = subparsers.add_parser(
+        "check", help="Report credential presence without reading it out", allow_abbrev=False
+    )
     check_parser.add_argument("--open-on-missing", action="store_true")
     check_parser.set_defaults(handler=check_command)
 
-    request_parser = subparsers.add_parser("request", help="Send an authenticated Open Cloud request")
+    request_parser = subparsers.add_parser(
+        "request", help="Send an authenticated Open Cloud request", allow_abbrev=False
+    )
     request_parser.add_argument("--method", required=True)
     request_parser.add_argument("--url", required=True)
     request_parser.add_argument(
@@ -445,6 +450,7 @@ def build_parser() -> argparse.ArgumentParser:
     introspect_parser = subparsers.add_parser(
         "introspect",
         help="Show the configured key's scopes, targets, and status via the official introspection endpoint",
+        allow_abbrev=False,
     )
     introspect_parser.add_argument("--output")
     introspect_parser.add_argument("--timeout", type=float, default=30.0)
