@@ -1,12 +1,14 @@
 ---
 name: roblox-open-cloud
 description: Securely resolve and call Roblox Open Cloud REST APIs with API-key authentication while keeping the credential hidden from the agent, arguments, logs, and chat. Use this skill whenever a Roblox task asks to call, query, invoke, automate, publish through, plan, or troubleshoot Open Cloud or a Roblox web API under apis.roblox.com. It verifies methods, paths, parameters, schemas, scopes, stability, and responses against Roblox's live official OpenAPI document, with an official-reference fallback for operations missing from that document. Trigger even when the user says only “Roblox API” or names Data Stores, Memory Stores, Messaging, assets, places, universes, Creator Store, or webhooks. Do not use it for in-experience Roblox engine APIs, Studio scripting, Creator Dashboard UI-only work, or OAuth user-consent flows.
-compatibility: Requires Python 3, HTTPS access to create.roblox.com and apis.roblox.com, and ROBLOX_OPEN_CLOUD_API_KEY in the agent process environment.
+compatibility: Requires Python 3, HTTPS access to create.roblox.com and apis.roblox.com, and ROBLOX_OPEN_CLOUD_API_KEY in the agent process environment or in a `.env` file in the working directory.
 ---
 
 # Roblox Open Cloud
 
-Call Roblox Open Cloud without making the API key visible to the model. The bundled request helper is the only credential boundary: it reads the environment variable inside its own process, adds `x-api-key`, blocks untrusted destinations and redirects, and redacts the credential from response/error output. The separate OpenAPI lookup helper reads only Roblox's public specification and never handles credentials.
+Call Roblox Open Cloud without making the API key visible to the model. The bundled request helper is the only credential boundary: it reads the key inside its own process, adds `x-api-key`, blocks untrusted destinations and redirects, and redacts the credential from response/error output. The separate OpenAPI lookup helper reads only Roblox's public specification and never handles credentials.
+
+This skill covers how to call Open Cloud. When the repository or a calling skill defines its own Open Cloud policy (which scopes to grant, where the key lives, what to confirm before a mutation, cost checks), read that policy first; it takes precedence over the generic guidance here.
 
 Resolve every relative path below from this skill directory.
 
@@ -18,16 +20,16 @@ Run this before researching or constructing a request:
 python3 scripts/open_cloud_request.py check --open-on-missing
 ```
 
-The command reports only whether `ROBLOX_OPEN_CLOUD_API_KEY` is non-empty; it never returns the value.
+The command reports only whether a key is available and where it came from (`source`: `environment` or `.env`); it never returns the value. The helper takes `ROBLOX_OPEN_CLOUD_API_KEY` from its process environment first, then from the `.env` file in the current working directory (not parent directories). Run the helper from the directory that holds that `.env`.
 
 If it reports `configured: false`:
 
 1. The helper opens <https://create.roblox.com/dashboard/credentials?activeTab=ApiKeysTab>.
-2. Ask the user to create a least-privilege API key and set `ROBLOX_OPEN_CLOUD_API_KEY` in the environment inherited by the agent process.
-3. Tell the user not to paste the key into chat, a command argument, source code, a repository, or a file the agent can read.
-4. Stop. Do not inspect other environment variables, accept the key through chat/stdin/a flag, or attempt the API call.
+2. Ask the user to create a least-privilege API key and add `ROBLOX_OPEN_CLOUD_API_KEY=<key>` to the working directory's `.env` themselves (confirm `.env` is git-ignored first), or set the variable in the environment inherited by the agent process.
+3. Tell the user not to paste the key into chat, a command argument, source code, a committed file, or anywhere the agent reads.
+4. Stop. Do not open or read `.env`, inspect other environment variables, accept the key through chat/stdin/a flag, or attempt the API call.
 
-A key exported in a different terminal after this agent started might not reach the current process. In that case, ask the user to restart or relaunch the agent from the configured environment.
+A `.env` edit takes effect on the next helper run. A key exported in a different terminal after this agent started might not reach the current process; prefer `.env`, or ask the user to relaunch the agent from the configured environment.
 
 ## Request workflow
 
@@ -44,21 +46,21 @@ After the gate succeeds:
 3. Cross-check Roblox extensions when present: every entry in `x-roblox-scopes`, its `targetResourceSpecifier` or condition, `x-roblox-stability`, `x-roblox-deprecated`, `x-roblox-alternatives`, `x-roblox-rate-limits`, and `x-roblox-engine-usability`. The OpenAPI page says the document is still under development and most extensions are experimental, so use the current download rather than a cached copy and verify consequential semantics in the linked reference.
 4. If the OpenAPI operation and its current official reference disagree on method, path, body, scope, or mutation effect, do not guess. State the conflict and stop before calling the API, especially for mutations.
 5. State the exact documented scope names and their source before the request. Note that `--required-scope` is a mandatory option for `open_cloud_request.py request`. Pass each scope with a separate `--required-scope`. If the OpenAPI schema specifies `scopes: []` (empty array), pass a standard domain-appropriate scope (e.g. `universe:read` for Universes/Places read operations) to satisfy helper validation.
-6. For a mutation, state the target resource and intended effect before execution. If the user's request already clearly authorizes that exact mutation, proceed; otherwise request confirmation.
+6. For a mutation, state the target resource and intended effect. The helper only validates and prints a plan for every non-`GET` request unless `--apply` is passed; nothing is sent without it. Run the command without `--apply` first and show the printed plan. If the user's request already clearly authorizes that exact mutation, rerun the same command with `--apply`; otherwise request confirmation first. Side-effect-free `POST` queries also need `--apply` because the helper cannot tell them apart.
 7. Preserve the OpenAPI media-type contract and keep generated body artifacts out of the repository:
    - Put generated JSON and raw binary bodies in a temporary file outside the repository and pass it with `--data-file` plus the exact documented `--content-type`.
    - For `multipart/form-data`, pass documented text fields as repeated `--multipart-field FIELD=VALUE` options and binary fields as `--multipart-file FIELD=PATH`; repeat either option when the API accepts repeated fields. The helper constructs the MIME boundary and body. Do not hand-build multipart bodies or set their `Content-Type`.
    - Never put credentials in a body file or multipart field.
 8. Execute only through the request helper. Do not use raw `curl`, HTTP libraries in ad-hoc code, browser JavaScript, Roblox Studio HTTP tools, or shell interpolation of the key.
 9. Separate credential presence, authentication, and authorization before giving remediation:
-   - Gate `configured: false`: no key reached the agent process. Open the creation page, explain how to set `ROBLOX_OPEN_CLOUD_API_KEY`, and stop.
+   - Gate `configured: false`: no key reached the helper. Open the creation page, explain how to add `ROBLOX_OPEN_CLOUD_API_KEY` to `.env` or the environment, and stop.
    - Gate `configured: true` plus HTTP `401`: a key is present but Roblox rejected authentication. Do not misreport it as missing. Use the current API Key management reference and Creator Dashboard status to give status-specific remediation:
      - `Disabled`: enable **Enable Key**.
      - `Expired`: remove or change the expiration date.
      - `Auto-Expired`: the key was neither used nor updated for 60 days; toggle **Enable Key** off and on, or update a key property.
      - `Revoked` or `Moderated`: regenerate the key.
      - `User Moderated`: resolve the generating account's moderation issue.
-   - Gate `configured: true` plus HTTP `403`: the key is present and the failure is authorization, not environment setup. Report every documented required scope, include the literal API Key management URL `https://create.roblox.com/dashboard/credentials?activeTab=ApiKeysTab`, and ask the user to edit the existing key's API operations, target experience/resource restrictions, accepted IPs, and status. Do not tell the user to create a key, set the environment variable, restart the agent, or paste/re-enter the key. A bare “Creator Dashboard” mention is insufficient.
+   - Gate `configured: true` plus HTTP `403`: the key is present and the failure is authorization, not environment setup. Report every documented required scope, include the literal API Key management URL `https://create.roblox.com/dashboard/credentials?activeTab=ApiKeysTab`, and ask the user to edit the existing key's API operations, target experience/resource restrictions, accepted IPs, and status. Do not tell the user to create a key, set the environment variable or `.env`, restart the agent, or paste/re-enter the key. A bare “Creator Dashboard” mention is insufficient. `introspect` (below) shows which scopes and targets the configured key actually has.
    Keep the credential-gate setup instructions out of `401` and `403` responses; mixing those branches makes users troubleshoot the wrong problem.
 10. Follow documented asynchronous operations to their terminal status. A side-effect-free `POST` query can require a result/status poll without becoming a mutation.
 11. For mutations, perform the documented read-back when one exists and report the observed result separately from the initial response.
@@ -99,7 +101,7 @@ python3 scripts/openapi_lookup.py component \
   --reference '#/components/schemas/ListDataStoresResponse'
 ```
 
-The helper downloads only `https://create.roblox.com/docs/cloud/openapi.json`, refuses redirects away from `create.roblox.com`, and never reads the API-key environment variable. Its compact JSON preserves Roblox extension fields, omits recursively nested schemas until requested, and returns `fallback_required: true` when the exact operation is absent.
+The lookup helper downloads only `https://create.roblox.com/docs/cloud/openapi.json`, refuses redirects away from `create.roblox.com`, and never reads the API key. Its compact JSON preserves Roblox extension fields, omits recursively nested schemas until requested, and returns `fallback_required: true` when the exact operation is absent.
 
 ## Helper commands
 
@@ -118,7 +120,7 @@ python3 scripts/open_cloud_request.py request \
   --required-scope 'EXACT_DOCUMENTED_SCOPE'
 ```
 
-JSON mutation using a body file:
+JSON mutation using a body file. Without `--apply` the helper prints the plan (method, URL, scopes, content type, body size) and sends nothing; after confirmation, rerun with `--apply`:
 
 ```bash
 python3 scripts/open_cloud_request.py request \
@@ -126,10 +128,11 @@ python3 scripts/open_cloud_request.py request \
   --url 'https://apis.roblox.com/EXACT_DOCUMENTED_PATH' \
   --required-scope 'EXACT_DOCUMENTED_WRITE_SCOPE' \
   --content-type 'application/json' \
-  --data-file /tmp/roblox-open-cloud-request.json
+  --data-file /tmp/roblox-open-cloud-request.json \
+  --apply
 ```
 
-Multipart form fields and files:
+Multipart form fields and files (the plan lists text field values and file paths):
 
 ```bash
 python3 scripts/open_cloud_request.py request \
@@ -138,7 +141,8 @@ python3 scripts/open_cloud_request.py request \
   --required-scope 'EXACT_DOCUMENTED_WRITE_SCOPE' \
   --multipart-field 'name=New name' \
   --multipart-field 'description=New description' \
-  --multipart-file 'imageFile=/path/to/icon.png'
+  --multipart-file 'imageFile=/path/to/icon.png' \
+  --apply
 ```
 
 Save a response without printing its body:
@@ -151,20 +155,27 @@ python3 scripts/open_cloud_request.py request \
   --output /tmp/roblox-open-cloud-response.json
 ```
 
-The helper accepts `GET`, `POST`, `PUT`, `PATCH`, and `DELETE`; only `https://apis.roblox.com` is allowed. Repeat `--required-scope` when an operation requires multiple scopes. Use `--data-file` for one raw body, or use repeated `--multipart-field FIELD=VALUE` and `--multipart-file FIELD=PATH` options for documented multipart fields and binary parts; these modes are mutually exclusive, and the helper generates the multipart boundary. The helper reports required scopes and the credential dashboard on `403`. It does not follow redirects because forwarding an authenticated header to a redirected destination can leak a credential.
+Show the configured key's name, scopes, operations, target resources, and status through the official introspection endpoint (`POST https://apis.roblox.com/api-keys/v1/introspect`; documented in the API key management reference, not in the OpenAPI document). The helper puts the key in the request body itself and redacts it from the output. It has no side effects, so it needs no `--apply`:
+
+```bash
+python3 scripts/open_cloud_request.py introspect
+```
+
+The helper accepts `GET`, `POST`, `PUT`, `PATCH`, and `DELETE`; only `https://apis.roblox.com` is allowed. Every method except `GET` requires `--apply` to send. Repeat `--required-scope` when an operation requires multiple scopes. Use `--data-file` for one raw body, or use repeated `--multipart-field FIELD=VALUE` and `--multipart-file FIELD=PATH` options for documented multipart fields and binary parts; these modes are mutually exclusive, and the helper generates the multipart boundary. The helper reports required scopes and the credential dashboard on `403`. It does not follow redirects because forwarding an authenticated header to a redirected destination can leak a credential.
 
 ## Credential safety boundary
 
-- Never read, print, return, summarize, compare, validate, introspect, or count characters in the API key.
+- Never read, print, return, summarize, compare, validate, or count characters in the API key.
+- Never open, read, search, print, or `source` the `.env` file; only the helper reads it, inside its own process.
 - Never run `printenv`, `env`, shell expansion such as `$ROBLOX_OPEN_CLOUD_API_KEY`, or any command that can expose the value in arguments, logs, history, process listings, or tool input.
-- Never add an alternate path that accepts an API key by option, stdin, request body, config file, or source file.
-- Never call the API-key introspection endpoint: its request body would expose the key outside the helper's header-only boundary.
+- Never add another path that accepts an API key by option, stdin, request body, other files, or source code. The helper reads only its environment variable and the working directory's `.env`.
+- Inspect the key's permissions only through `open_cloud_request.py introspect`; never build an introspection request yourself.
 - Never send the key to non-Roblox hosts. Do not weaken the helper host, HTTPS, or redirect checks to make an endpoint work.
 - Report only `configured: true/false`, HTTP status, sanitized response body or output path, and actionable permission/resource guidance.
 
 ## Key creation guidance
 
-When setup is required, point the user to the Creator Dashboard page already opened by the helper. Recommend a separate key per automation, the minimum operation scopes, restriction to the specific experience/resources where supported, an IP restriction when the caller has a stable IP, and an expiration/rotation policy appropriate to the automation. Warn that Roblox automatically marks a key `Auto-Expired` when it has been neither used nor updated for 60 days, even without a configured expiration date; long-running automation needs status monitoring and a recovery/rotation procedure. For group automation, recommend a dedicated account with only the required group role.
+When setup is required, point the user to the Creator Dashboard page already opened by the helper. Recommend a separate key per automation, the minimum operation scopes, restriction to the specific experience/resources where supported, an IP restriction when the caller has a stable IP, and an expiration/rotation policy appropriate to the automation. Warn that Roblox automatically marks a key `Auto-Expired` when it has been neither used nor updated for 60 days, even without a configured expiration date; long-running automation needs status monitoring and a recovery/rotation procedure. For group automation, recommend a dedicated account with only the required group role. After the user saves the key, run `introspect` to confirm the scopes and target resources match what was intended.
 
 Official references:
 
