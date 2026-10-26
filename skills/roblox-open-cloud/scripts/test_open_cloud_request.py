@@ -185,6 +185,11 @@ class CredentialSourceTests(WorkingDirectoryTestCase):
 
         self.assertEqual(open_cloud_request.credential(), (None, None))
 
+    def test_byte_order_mark_does_not_hide_the_first_line(self) -> None:
+        Path(".env").write_bytes("\ufeffROBLOX_OPEN_CLOUD_API_KEY=bom-key\n".encode("utf-8"))
+
+        self.assertEqual(open_cloud_request.credential(), ("bom-key", ".env"))
+
     def test_empty_value_counts_as_missing(self) -> None:
         Path(".env").write_text("ROBLOX_OPEN_CLOUD_API_KEY=\n", encoding="utf-8")
 
@@ -225,6 +230,17 @@ class ApplyGateTests(WorkingDirectoryTestCase):
         self.assertEqual(request.get_method(), "POST")
         self.assertEqual(request.get_header("X-api-key"), "file-key")
 
+    def test_abbreviated_apply_flag_is_rejected(self) -> None:
+        parser = open_cloud_request.build_parser()
+        base = ["request", "--method", "POST", "--url", "https://apis.roblox.com/x", "--required-scope", "s"]
+        for flag in ("--ap", "--app", "--appl"):
+            with self.subTest(flag=flag), self.assertRaises(SystemExit), mock.patch.object(
+                open_cloud_request.sys, "stderr", io.StringIO()
+            ):
+                parser.parse_args([*base, flag])
+
+        self.assertTrue(parser.parse_args([*base, "--apply"]).apply)
+
     def test_get_is_sent_without_apply(self) -> None:
         os.environ[open_cloud_request.API_KEY_ENV] = "env-key"
         output = self.directory / "response.json"
@@ -252,7 +268,7 @@ class IntrospectTests(WorkingDirectoryTestCase):
 
         self.assertEqual(status, 0)
         request = open_request.call_args.args[0]
-        self.assertEqual(request.full_url, open_cloud_request.INTROSPECT_URL)
+        self.assertEqual(request.full_url, "https://apis.roblox.com/api-keys/v1/introspect")
         self.assertIsNone(request.get_header("X-api-key"))
         self.assertEqual(json.loads(request.data), {"apiKey": "file-key"})
         self.assertNotIn(b"file-key", output.read_bytes())
